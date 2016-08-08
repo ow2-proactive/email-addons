@@ -23,8 +23,8 @@ are entered as key/value pairs in the third-party credentials associated to
 the user that runs the task.
 [See the documentation for more information](http://doc.activeeon.com/latest/user/ProActiveUserGuide.html#_third_party_credentials).
 
-Please note that sending emails to Google or Microsoft servers may require some extra
-configurations:
+Please note that sending emails from Google or Microsoft servers may require extra
+configurations for authenticating with success:
 
   - https://www.google.com/settings/security/lesssecureapps
   - http://pchelp.ricmedia.com/how-to-fix-550-5-3-4-requested-action-not-taken-error/
