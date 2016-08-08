@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<job
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="urn:proactive:jobdescriptor:3.3"
+     xsi:schemaLocation="urn:proactive:jobdescriptor:3.3 http://www.activeeon.com/public_content/schemas/proactive/jobdescriptor/3.3/schedulerjob.xsd"
+    name="Send Email" 
+    priority="normal"
+    cancelJobOnError="false">
+  <description>
+    <![CDATA[ A workflow that sends a email using a Java task. ]]>
+  </description>
+  <genericInformation>
+    <info name="var1" value="val1"/>
+    <info name="var2" value="val2"/>
+  </genericInformation>
+  <taskFlow>
+    <task name="SendEmail"
+    maxNumberOfExecution="4">
+      <javaExecutable class="org.ow2.proactive.addons.email.task.EmailTask">
+        <parameters>
+          <parameter name="from" value="noreply@company.org"/>
+          <parameter name="to" value="user@domain.org"/>
+          <parameter name="subject" value="Scale Beyond Limits"/>
+          <parameter name="body" value="Try out ProActive:\nhttps://try.activeeon.com"/>
+        </parameters>
+      </javaExecutable>
+    </task>
+  </taskFlow>
+</job>
