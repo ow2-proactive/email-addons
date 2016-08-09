@@ -3,9 +3,25 @@ version projectVersion
 
 allprojects {
     apply plugin: 'java'
+    apply plugin: 'maven'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                snapshotRepository(url: "http://repository.activeeon.com/content/repositories/snapshots/") {
+                    authentication(userName: "${System.getProperty('nexusUsername')}",
+                            password: "${System.getProperty('nexusPassword')}")
+                }
+                repository(url: "http://repository.activeeon.com/content/repositories/releases/") {
+                    authentication(userName: "${System.getProperty('nexusUsername')}",
+                            password: "${System.getProperty('nexusPassword')}")
+                }
+            }
+        }
+    }
 }
 
 repositories {
@@ -17,7 +33,7 @@ dependencies {
     compile 'com.google.guava:guava:19.0'
     compile 'javax.mail:mail:1.4.7'
     compile "org.ow2.proactive:scheduler-api:$projectVersion"
-
+    
     testCompile "junit:junit:4.12"
 }
 
