@@ -41,6 +41,7 @@ ProActive client or even through the REST API.
 ## Gmail
 
 Password authentication to Google servers requires extra configuration. 
+
 See https://www.google.com/settings/security/lesssecureapps.
 
 | Key  | Value |
@@ -54,13 +55,14 @@ See https://www.google.com/settings/security/lesssecureapps.
 ## Outlook
 
 Password authentication to Microsoft servers requires extra configuration. 
+
 See http://pchelp.ricmedia.com/how-to-fix-550-5-3-4-requested-action-not-taken-error/
 
 | Key  | Value |
-| ------------------------- | --------------- |
-| mail.smtp.host            | smtp.gmail.com  |
-| mail.smtp.starttls.enable | true            |
-| mail.smtp.ssl.trust       | smtp.gmail.com  |
-| mail.smtp.username        | user@gmail.com  |
-| mail.smtp.password        | user_password   |
+| ------------------------- | ---------------------- |
+| mail.smtp.host            | smtp-mail.outlook.com  |
+| mail.smtp.starttls.enable | true                   |
+| mail.smtp.ssl.trust       | smtp-mail.outlook.com  |
+| mail.smtp.username        | user@gmail.com         |
+| mail.smtp.password        | user_password          |
 
