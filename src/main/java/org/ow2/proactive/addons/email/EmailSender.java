@@ -237,7 +237,9 @@ public class EmailSender {
         private String trustSsl = "*";
 
         public Builder() {
-
+            recipients = new ArrayList<>();
+            cc = new ArrayList<>();
+            bcc = new ArrayList<>();
         }
 
         public Builder(Map<String, Serializable> options) {
@@ -297,7 +299,7 @@ public class EmailSender {
             }
 
             if (args.containsKey(ARG_RECIPIENTS)) {
-                recipients = emailAddressesAsList(args, ARG_RECIPIENTS);
+                recipients.addAll(emailAddressesAsList(args, ARG_RECIPIENTS));
             }
 
             if (args.containsKey(ARG_SUBJECT)) {
@@ -309,13 +311,12 @@ public class EmailSender {
             }
 
             if (args.containsKey(ARG_CC)) {
-                cc = emailAddressesAsList(args, ARG_CC);
+                cc.addAll(emailAddressesAsList(args, ARG_CC));
             }
 
             if (args.containsKey(ARG_BCC)) {
-                bcc = emailAddressesAsList(args, ARG_BCC);
+                bcc.addAll(emailAddressesAsList(args, ARG_BCC));
             }
-
         }
 
         private ImmutableList<String> emailAddressesAsList(Map<String, Serializable> args,
@@ -388,8 +389,8 @@ public class EmailSender {
             this.subject = subject;
 
             if (subject.length() > 78) {
-                throw new InvalidArgumentException("The specified subject is too long: " +
-                        subject.length() + " characters specified but 78 allowed");
+                throw new InvalidArgumentException("The specified subject is too long: " + subject.length() +
+                    " characters specified but 78 allowed");
             }
 
             return this;

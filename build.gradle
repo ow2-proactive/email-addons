@@ -37,7 +37,8 @@ dependencies {
     compile 'com.google.guava:guava:19.0'
     compile 'javax.mail:mail:1.4.7'
     compile "org.ow2.proactive:scheduler-api:$projectVersion"
-    
+
+    testCompile 'com.google.truth:truth:0.28'
     testCompile "junit:junit:4.12"
 }
 
