@@ -24,6 +24,8 @@ allprojects {
     }
 }
 
+defaultTasks 'clean', 'jar'
+
 repositories {
     if (project.hasProperty('local')) {
         mavenLocal()
@@ -34,16 +36,23 @@ repositories {
 }
 
 dependencies {
-    compile 'com.google.guava:guava:19.0'
-    compile 'javax.mail:mail:1.4.7'
-    compile "org.ow2.proactive:scheduler-api:$projectVersion"
+    compile "com.google.guava:guava:19.0"
+    compile "javax.mail:mail:1.4.7"
+    compile("org.ow2.proactive:scheduler-api:$projectVersion") {
+        exclude module: "org.slf4j"
+    }
 
-    testCompile 'com.google.truth:truth:0.28'
+    testCompile "com.google.truth:truth:0.28"
     testCompile "junit:junit:4.12"
 }
 
 jar {
     from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.compile
+                .findAll { !it.name.toLowerCase().contains("slf4j") }
+                .collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
     }
 }
+
