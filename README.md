@@ -1,4 +1,4 @@
-This project provide an utility class but also a Java task that allow to send
+This project provides an utility class but also a Java task that allow to send
 an email from a ProActive Workflow.
 
 # Installation
