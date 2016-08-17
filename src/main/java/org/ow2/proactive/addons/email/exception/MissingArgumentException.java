@@ -41,8 +41,8 @@ package org.ow2.proactive.addons.email.exception;
  */
 public class MissingArgumentException extends EmailException {
 
-    public MissingArgumentException(String argumentName) {
-        super("Required argument missing: " + argumentName);
+    public MissingArgumentException(String propertyName) {
+        super("Required property missing: " + propertyName);
     }
 
 }

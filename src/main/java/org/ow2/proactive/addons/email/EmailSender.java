@@ -55,12 +55,14 @@ import org.ow2.proactive.addons.email.converters.BooleanConverter;
 import org.ow2.proactive.addons.email.converters.IntegerConverter;
 import org.ow2.proactive.addons.email.exception.EmailException;
 import org.ow2.proactive.addons.email.exception.InvalidArgumentException;
-import org.ow2.proactive.addons.email.exception.MissingPropertyException;
+import org.ow2.proactive.addons.email.exception.MissingArgumentException;
 
 import com.google.common.collect.ImmutableList;
 
 
 /**
+ * Utility class for sending emails.
+ *
  * @author ActiveEon Team
  */
 public class EmailSender {
@@ -83,9 +85,6 @@ public class EmailSender {
 
     public static final String ARG_BODY = "body";
 
-    public static final List<String> REQUIRED_ARGUMENTS = ImmutableList.of(ARG_FROM, ARG_RECIPIENTS,
-            ARG_SUBJECT, ARG_BODY);
-
     /*
      * Define javax.mail properties that will be loaded from third-party credentials
      */
@@ -107,46 +106,30 @@ public class EmailSender {
     public static final String PROPERTY_MAIL_SMTP_SSL_TRUST = "mail.smtp.ssl.trust";
 
     /*
-     * Instance variables containing values
+     * Instance variables
      */
 
-    // Specify author of the message
-    private String from;
+    protected boolean auth = true;
+    protected boolean debug = false;
+    protected boolean enableStartTls = false;
 
-    // Address(es) of the primary recipient(s) of the message.
-    private List<String> recipients;
+    protected int port = 587;
 
-    // The addresses of others who are to receive the message, though the content of the message may not be directed at them.
-    private List<String> cc;
+    protected List<String> cc;
+    protected List<String> bcc;
+    protected List<String> recipients;
 
-    // Addresses of recipients of the message whose addresses are not to be revealed to other recipients of the message.
-    private List<String> bcc;
+    protected String body = "";
+    protected String from;
+    protected String host;
+    protected String username;
+    protected String password;
+    protected String subject;
+    protected String trustSsl = "*";
 
-    // Short string identifying the topic of the message
-    private String subject;
-
-    // The content of the message.
-    private String body = "";
-
-    private boolean debug = false;
-
-    private String host;
-
-    private int port = 587;
-
-    private String username;
-
-    private String password;
-
-    private boolean auth = true;
-
-    private boolean enableStartTls = false;
-
-    private String trustSsl = "*";
-
-    private EmailSender(boolean auth, List<String> bcc, String body, List<String> cc, boolean debug,
-            boolean enableStartTls, String from, String host, int port, List<String> recipients,
-            String subject, String trustSsl, String username, String password) {
+    protected EmailSender(boolean auth, boolean debug, boolean enableStartTls, int port, List<String> cc,
+            List<String> bcc, List<String> recipients, String body, String from, String host, String username,
+            String password, String subject, String trustSsl) {
         this.auth = auth;
         this.bcc = bcc;
         this.body = body;
@@ -161,6 +144,8 @@ public class EmailSender {
         this.subject = subject;
         this.trustSsl = trustSsl;
         this.username = username;
+
+        checkInstanceFieldsConsistency();
     }
 
     public void sendPlainTextEmail() {
@@ -171,7 +156,7 @@ public class EmailSender {
         props.put(PROPERTY_MAIL_SMTP_PORT, port);
         props.put(PROPERTY_MAIL_SMTP_AUTH, auth);
         props.put(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, Boolean.toString(enableStartTls));
-        props.put(PROPERTY_MAIL_SMTP_HOST, trustSsl);
+        props.put(PROPERTY_MAIL_SMTP_SSL_TRUST, trustSsl);
 
         Session session = Session.getInstance(props);
         MimeMessage message = new MimeMessage(session);
@@ -219,35 +204,66 @@ public class EmailSender {
         }
     }
 
+    private void checkInstanceFieldsConsistency() {
+        if (from == null) {
+            throw new MissingArgumentException("from");
+        }
+
+        if (recipients == null || recipients.size() == 0) {
+            throw new MissingArgumentException("recipient");
+        }
+
+        if (subject == null) {
+            throw new MissingArgumentException("subject");
+        }
+
+        if (body == null) {
+            throw new MissingArgumentException("body");
+        }
+
+        // cf. RFC 2228: http://www.faqs.org/rfcs/rfc2822.html
+        if (subject.length() > 78) {
+            throw new InvalidArgumentException("The specified subject is too long: " + subject.length() +
+                " characters specified but 78 allowed");
+        }
+    }
+
+    /**
+     * Utility class for creating an instance of {@link EmailSender}.
+     */
     public static class Builder {
 
-        private boolean debug = false;
         private boolean auth = true;
-        private String from;
-        private List<String> recipients;
-        private List<String> cc;
+        private boolean debug = false;
+        private boolean enableStartTls = false;
+
+        private int port = 587;
+
         private List<String> bcc;
-        private String subject;
+        private List<String> cc;
+        private List<String> recipients;
+
         private String body = "";
+        private String from;
+        private String host;
         private String username;
         private String password;
-        private String host;
-        private int port = 587;
-        private boolean enableStartTls = false;
+        private String subject;
         private String trustSsl = "*";
 
         public Builder() {
-            recipients = new ArrayList<>();
-            cc = new ArrayList<>();
             bcc = new ArrayList<>();
+            cc = new ArrayList<>();
+            recipients = new ArrayList<>();
         }
 
         public Builder(Map<String, Serializable> options) {
-            loadEmailApiConfiguration(options);
+            this();
+            loadJavaMailConfiguration(options);
             loadArguments(options);
         }
 
-        private void loadEmailApiConfiguration(Map<String, Serializable> options) {
+        private void loadJavaMailConfiguration(Map<String, Serializable> options) {
             String value = getAsString(options, PROPERTY_MAIL_DEBUG);
             if (value != null) {
                 debug = BooleanConverter.getInstance().convert(PROPERTY_MAIL_DEBUG, value);
@@ -257,7 +273,7 @@ public class EmailSender {
             if (value != null) {
                 host = value;
             } else {
-                throw new MissingPropertyException(PROPERTY_MAIL_SMTP_HOST);
+                throw new MissingArgumentException(PROPERTY_MAIL_SMTP_HOST);
             }
 
             value = getAsString(options, PROPERTY_MAIL_SMTP_PORT);
@@ -303,7 +319,7 @@ public class EmailSender {
             }
 
             if (args.containsKey(ARG_SUBJECT)) {
-                setSubject(getAsString(args, ARG_SUBJECT));
+                subject = getAsString(args, ARG_SUBJECT);
             }
 
             if (args.containsKey(ARG_BODY)) {
@@ -333,11 +349,23 @@ public class EmailSender {
             return this;
         }
 
+        /**
+         * Set the author of the message.
+         *
+         * @param from the author of the message.
+         * @return the builder instance.
+         */
         public Builder setFrom(String from) {
             this.from = from;
             return this;
         }
 
+        /**
+         * Add an address for the primary recipient(s) of the message.
+         *
+         * @param recipient the email to add.
+         * @return the builder instance.
+         */
         public Builder addRecipient(String recipient) {
             if (this.recipients == null) {
                 this.recipients = new ArrayList<>();
@@ -352,6 +380,13 @@ public class EmailSender {
             return this;
         }
 
+        /**
+         * The addresse of another who is to receive the message,
+         * though the content of the message may not be directed at him/her.
+         *
+         * @param cc the email to add as carbon copy.
+         * @return the builder instance.
+         */
         public Builder addCc(String cc) {
             if (this.cc == null) {
                 this.cc = new ArrayList<>();
@@ -366,6 +401,13 @@ public class EmailSender {
             return this;
         }
 
+        /**
+         * The address of the recipient of the message whose addresse is not to be revealed
+         * to other recipients of the message.
+         *
+         * @param bcc the email to add as blind carbon copy.
+         * @return the builder instance.
+         */
         public Builder addBcc(String bcc) {
             if (this.bcc == null) {
                 this.bcc = new ArrayList<>();
@@ -380,61 +422,178 @@ public class EmailSender {
             return this;
         }
 
+        /**
+         * Specify if debugging mode of the underlying library that is
+         * used to send emails should be enabled or not.
+         *
+         * @param value
+         * @return the builder instance.
+         */
         public Builder setDebug(boolean value) {
             this.debug = value;
             return this;
         }
 
+        /**
+         * The subject of the message that is sent.
+         *
+         * @param subject the subject value. Must not exceed 78 characters.
+         * @return the builder instance.
+         */
         public Builder setSubject(String subject) {
             this.subject = subject;
-
-            if (subject.length() > 78) {
-                throw new InvalidArgumentException("The specified subject is too long: " + subject.length() +
-                    " characters specified but 78 allowed");
-            }
-
             return this;
         }
 
+        /**
+         * The body (content) of the message that is sent.
+         * @param body the content of the message.
+         * @return the builder instance.
+         */
         public Builder setBody(String body) {
             this.body = body;
             return this;
         }
 
+        /**
+         * The username to use for connecting to the specified host.
+         *
+         * @param username the user name
+         * @return the builder instance.
+         */
         public Builder setUsername(String username) {
             this.username = username;
             return this;
         }
 
+        /**
+         * The password to use for connecting to the specified host.
+         *
+         * @param password the password.
+         * @return the builder instance.
+         */
         public Builder setPassword(String password) {
             this.password = password;
             return this;
         }
 
+        /**
+         * The SMTP server to connect to.
+         *
+         * @param host the SMTP server to connect to.
+         * @return the builder instance.
+         */
         public Builder setHost(String host) {
             this.host = host;
             return this;
         }
 
+        /**
+         * The SMTP server port to connect to.
+         *
+         * @param port the SMTP server port to connect to. Defaults to 587.
+         * @return the builder instance.
+         */
         public Builder setPort(int port) {
             this.port = port;
             return this;
         }
 
+        /**
+         * Define whether STARTTLS command is used or not.
+         *
+         * @param enableStartTls if true, enables the use of the STARTTLS command (if supported by the server)
+         * to switch the connection to a TLS-protected connection before issuing any login commands.
+         * Defaults to false.
+         * @return the builder instance.
+         */
         public Builder setEnableStartTls(boolean enableStartTls) {
             this.enableStartTls = enableStartTls;
             return this;
         }
 
+        /**
+         * Define SSL hosts to trust.
+         *
+         * @param trustSsl if set to "*", all hosts are trusted. If set to a whitespace separated list of
+         *                 hosts, those hosts are trusted. Otherwise, trust depends on the certificate the
+         *                 server presents.
+         * @return the builder instance.
+         */
         public Builder setTrustSsl(String trustSsl) {
             this.trustSsl = trustSsl;
             return this;
         }
 
+        public boolean isDebugEnabled() {
+            return debug;
+        }
+
+        public boolean isAuthEnabled() {
+            return auth;
+        }
+
+        public String getFrom() {
+            return from;
+        }
+
+        public List<String> getRecipients() {
+            return recipients;
+        }
+
+        public List<String> getCc() {
+            return cc;
+        }
+
+        public List<String> getBcc() {
+            return bcc;
+        }
+
+        public String getSubject() {
+            return subject;
+        }
+
+        public String getBody() {
+            return body;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public String getHost() {
+            return host;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public boolean isStartTlsEnabled() {
+            return enableStartTls;
+        }
+
+        public String getTrustSsl() {
+            return trustSsl;
+        }
+
         public EmailSender build() {
-            EmailSender emailNotifier = new EmailSender(auth, bcc, body, cc, debug, enableStartTls, from,
-                host, port, recipients, subject, trustSsl, username, password);
+            EmailSender emailNotifier = new EmailSender(auth, debug, enableStartTls, port, cc, bcc,
+                recipients, body, from, host, username, password, subject, trustSsl);
             return emailNotifier;
+        }
+
+        @Override
+        public String toString() {
+            return "Builder{" + "auth=" + auth + ", debug=" + debug + ", enableStartTls=" + enableStartTls +
+                ", port=" + port + ", bcc=" + bcc + ", cc=" + cc + ", recipients=" + recipients + ", body='" +
+                body + '\'' + ", from='" + from + '\'' + ", host='" + host + '\'' + ", username='" +
+                username + '\'' + ", password='" + password + '\'' + ", subject='" + subject + '\'' +
+                ", trustSsl='" + trustSsl + '\'' + '}';
         }
 
     }

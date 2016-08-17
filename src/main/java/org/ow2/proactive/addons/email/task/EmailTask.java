@@ -47,8 +47,14 @@ import org.ow2.proactive.scheduler.common.task.executable.JavaExecutable;
 
 /**
  * Java Task that allows to send plain text emails. It assumes that some third-party credentials
- * are configured for the user that runs the task, but also that emails values are given as task
- * parameters.
+ * are configured for the user that runs the task, but also that email values are given as task
+ * arguments.
+ * <p>
+ * WARNING: this Java task is working but issues may be encountered when used from the Studio Webapp.
+ * Indeed this last, does not allow some characters as argument value (e.g. <). Besides, line breaks seem
+ * automatically escaped. As a consequence, no workflow template using this task is integrated in the default
+ * distributed. However, this task is kept since it was developed before the {@link EmailSender} builder and
+ * could maybe be integrated once the Studio issues are fixed.
  *
  * @author ActiveEon Team
  */
@@ -76,6 +82,7 @@ public class EmailTask extends JavaExecutable {
             emailSender.sendPlainTextEmail();
             return "true";
         } catch (RuntimeException e) {
+            e.printStackTrace();
             return "false";
         }
     }
