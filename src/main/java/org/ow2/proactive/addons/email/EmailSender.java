@@ -166,12 +166,12 @@ public class EmailSender {
     public void sendPlainTextEmail() {
         Properties props = new Properties();
 
-        props.put("mail.debug", debug);
-        props.put("mail.smtp.host", host);
-        props.put("mail.smtp.port", port);
-        props.put("mail.smtp.auth", auth);
-        props.put("mail.smtp.starttls.enable", Boolean.toString(enableStartTls));
-        props.put("mail.smtp.ssl.trust", trustSsl);
+        props.put(PROPERTY_MAIL_DEBUG, debug);
+        props.put(PROPERTY_MAIL_SMTP_HOST, host);
+        props.put(PROPERTY_MAIL_SMTP_PORT, port);
+        props.put(PROPERTY_MAIL_SMTP_AUTH, auth);
+        props.put(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, Boolean.toString(enableStartTls));
+        props.put(PROPERTY_MAIL_SMTP_HOST, trustSsl);
 
         Session session = Session.getInstance(props);
         MimeMessage message = new MimeMessage(session);
