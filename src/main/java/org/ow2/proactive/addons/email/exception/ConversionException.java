@@ -36,6 +36,9 @@
  */
 package org.ow2.proactive.addons.email.exception;
 
+/**
+ * @author ActiveEon Team
+ */
 public class ConversionException extends EmailException {
 
     private final String resolution;

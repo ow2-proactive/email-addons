@@ -39,7 +39,6 @@ package org.ow2.proactive.addons.email.exception;
 /**
  * @author ActiveEon Team
  */
-
 public class MissingPropertyException extends EmailException {
 
     public MissingPropertyException(String propertyName) {
