@@ -149,46 +149,17 @@ public class EmailSender {
     }
 
     public void sendPlainTextEmail() {
-        Properties props = new Properties();
-
-        props.put(PROPERTY_MAIL_DEBUG, debug);
-        props.put(PROPERTY_MAIL_SMTP_HOST, host);
-        props.put(PROPERTY_MAIL_SMTP_PORT, port);
-        props.put(PROPERTY_MAIL_SMTP_AUTH, auth);
-        props.put(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, Boolean.toString(enableStartTls));
-        props.put(PROPERTY_MAIL_SMTP_SSL_TRUST, trustSsl);
+        Properties props = buildSmtpConfiguration();
 
         Session session = Session.getInstance(props);
         MimeMessage message = new MimeMessage(session);
         Transport transport = null;
 
         try {
-            if (bcc != null) {
-                for (String email : bcc) {
-                    message.addRecipients(Message.RecipientType.BCC, email);
-                }
-            }
-
-            if (cc != null) {
-                for (String email : cc) {
-                    message.addRecipients(Message.RecipientType.CC, email);
-                }
-            }
-
-            if (from != null) {
-                message.addFrom(new Address[] { new InternetAddress(from) });
-            }
-
-            for (String recipient : recipients) {
-                message.addRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
-            }
-
-            message.setSubject(subject);
-            message.setText(body);
+            configurePlainTextMessage(message);
 
             transport = session.getTransport("smtp");
-            transport.connect(username, password);
-            transport.sendMessage(message, message.getAllRecipients());
+            connectAndSendMessage(message, transport);
         } catch (AddressException e) {
             throw new EmailException(e);
         } catch (MessagingException e) {
@@ -202,6 +173,49 @@ public class EmailSender {
                 }
             }
         }
+    }
+
+    protected Properties buildSmtpConfiguration() {
+        Properties props = new Properties();
+
+        props.put(PROPERTY_MAIL_DEBUG, debug);
+        props.put(PROPERTY_MAIL_SMTP_HOST, host);
+        props.put(PROPERTY_MAIL_SMTP_PORT, port);
+        props.put(PROPERTY_MAIL_SMTP_AUTH, auth);
+        props.put(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, enableStartTls);
+        props.put(PROPERTY_MAIL_SMTP_SSL_TRUST, trustSsl);
+
+        return props;
+    }
+
+    protected void configurePlainTextMessage(MimeMessage message) throws MessagingException {
+        if (bcc != null) {
+            for (String email : bcc) {
+                message.addRecipients(Message.RecipientType.BCC, email);
+            }
+        }
+
+        if (cc != null) {
+            for (String email : cc) {
+                message.addRecipients(Message.RecipientType.CC, email);
+            }
+        }
+
+        if (from != null) {
+            message.addFrom(new Address[] { new InternetAddress(from) });
+        }
+
+        for (String recipient : recipients) {
+            message.addRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+        }
+
+        message.setSubject(subject);
+        message.setText(body);
+    }
+
+    protected void connectAndSendMessage(MimeMessage message, Transport transport) throws MessagingException {
+        transport.connect(username, password);
+        transport.sendMessage(message, message.getAllRecipients());
     }
 
     private void checkInstanceFieldsConsistency() {
