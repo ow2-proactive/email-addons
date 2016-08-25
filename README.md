@@ -1,6 +1,6 @@
 # Email Notification Addons
 
-[![Build Status](http://jenkins.activeeon.com/job/emailnotification-addons/badge/icon)](http://jenkins.activeeon.com/job/emailnotification-addons/)
+[![Build Status](http://jenkins.activeeon.com/buildStatus/icon?job=emailnotification-addons)](http://jenkins.activeeon.com/job/emailnotification-addons/)
 
 This project provides an utility class but also a Java task that allow 
 to send an email from a ProActive Workflow.
