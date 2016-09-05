@@ -40,7 +40,7 @@ dependencies {
     compile "javax.mail:mail:1.4.7"
     compile("org.ow2.proactive:scheduler-api:$projectVersion") {
         exclude module: "org.slf4j"
-	exclude module: "vfs-s3"
+	    exclude module: "vfs-s3"
     }
 
     testCompile "com.google.truth:truth:0.28"
