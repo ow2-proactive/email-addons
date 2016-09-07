@@ -38,7 +38,10 @@ repositories {
 dependencies {
     compile "com.google.guava:guava:19.0"
     compile "javax.mail:mail:1.4.7"
-    compileOnly "org.ow2.proactive:scheduler-api:$projectVersion"
+    compileOnly("org.ow2.proactive:scheduler-api:$projectVersion"){
+        exclude module: "org.slf4j"
+        exclude module: "vfs-s3"
+    }
     
     testCompile "com.google.truth:truth:0.28"
     testCompile "junit:junit:4.12"
