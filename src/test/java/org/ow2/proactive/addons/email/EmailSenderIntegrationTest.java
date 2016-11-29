@@ -33,6 +33,12 @@ import com.google.common.collect.ImmutableMap;
 public class EmailSenderIntegrationTest {
 
     @Test
+    /*
+    * If this test for gmail in emailnotification-addons will fail with error.
+    * This can be due to security polices of Google.
+    * You need to go to https://www.google.com/accounts/DisplayUnlockCaptcha,
+    * then rerun the jenkins tasks and new application will be added as verified.
+    */
     public void testEmailSenderUsingGmail() throws Exception {
         testSendEmail("smtp.gmail.com", "imap.gmail.com", System.getenv("GMAIL_EMAIL"),
                 System.getenv("GMAIL_USERNAME"), System.getenv("GMAIL_PASSWORD"));
