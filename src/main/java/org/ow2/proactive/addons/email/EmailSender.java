@@ -1,38 +1,27 @@
 /*
- * ################################################################
+ * ProActive Parallel Suite(TM):
+ * The Open Source library for parallel and distributed
+ * Workflows & Scheduling, Orchestration, Cloud Automation
+ * and Big Data Analysis on Enterprise Grids & Clouds.
  *
- * ProActive Parallel Suite(TM): The Java(TM) library for
- *    Parallel, Distributed, Multi-Core Computing for
- *    Enterprise Grids & Clouds
+ * Copyright (c) 2007 - 2017 ActiveEon
+ * Contact: contact@activeeon.com
  *
- * Copyright (C) 1997-2016 INRIA/University of
- *                 Nice-Sophia Antipolis/ActiveEon
- * Contact: proactive@ow2.org or contact@activeeon.com
- *
- * This library is free software; you can redistribute it and/or
+ * This library is free software: you can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License
- * as published by the Free Software Foundation; version 3 of
+ * as published by the Free Software Foundation: version 3 of
  * the License.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Affero General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
- * USA
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  * If needed, contact us to obtain a release under GPL Version 2 or 3
  * or a different license than the AGPL.
- *
- *  Initial developer(s):               The ProActive Team
- *                        http://proactive.inria.fr/team_members.htm
- *  Contributor(s):
- *
- * ################################################################
- * $$PROACTIVE_INITIAL_DEV$$
  */
 package org.ow2.proactive.addons.email;
 
@@ -109,21 +98,31 @@ public class EmailSender {
      */
 
     protected boolean auth = true;
+
     protected boolean debug = false;
+
     protected boolean enableStartTls = false;
 
     protected int port = 587;
 
     protected List<String> cc;
+
     protected List<String> bcc;
+
     protected List<String> recipients;
 
     protected String body = "";
+
     protected String from;
+
     protected String host;
+
     protected String username;
+
     protected String password;
+
     protected String subject;
+
     protected String trustSsl = "*";
 
     protected EmailSender(boolean auth, boolean debug, boolean enableStartTls, int port, List<String> cc,
@@ -237,7 +236,7 @@ public class EmailSender {
         // cf. RFC 2228: http://www.faqs.org/rfcs/rfc2822.html
         if (subject.length() > 78) {
             throw new InvalidArgumentException("The specified subject is too long: " + subject.length() +
-                " characters specified but 78 allowed");
+                                               " characters specified but 78 allowed");
         }
     }
 
@@ -247,21 +246,31 @@ public class EmailSender {
     public static class Builder {
 
         private boolean auth = true;
+
         private boolean debug = false;
+
         private boolean enableStartTls = false;
 
         private int port = 587;
 
         private List<String> bcc;
+
         private List<String> cc;
+
         private List<String> recipients;
 
         private String body = "";
+
         private String from;
+
         private String host;
+
         private String username;
+
         private String password;
+
         private String subject;
+
         private String trustSsl = "*";
 
         public Builder() {
@@ -311,8 +320,7 @@ public class EmailSender {
 
             value = getAsString(options, PROPERTY_MAIL_SMTP_STARTTLS_ENABLE);
             if (value != null) {
-                enableStartTls = BooleanConverter.getInstance().convert(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE,
-                        value);
+                enableStartTls = BooleanConverter.getInstance().convert(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, value);
             }
 
             value = getAsString(options, PROPERTY_MAIL_SMTP_SSL_TRUST);
@@ -348,8 +356,7 @@ public class EmailSender {
             }
         }
 
-        private ImmutableList<String> emailAddressesAsList(Map<?, ?> args,
-                String argRecipients) {
+        private ImmutableList<String> emailAddressesAsList(Map<?, ?> args, String argRecipients) {
             return ImmutableList.copyOf((getAsString(args, argRecipients)).split(REGEX_LIST_SEPARATOR));
         }
 
@@ -595,18 +602,30 @@ public class EmailSender {
         }
 
         public EmailSender build() {
-            EmailSender emailNotifier = new EmailSender(auth, debug, enableStartTls, port, cc, bcc,
-                recipients, body, from, host, username, password, subject, trustSsl);
+            EmailSender emailNotifier = new EmailSender(auth,
+                                                        debug,
+                                                        enableStartTls,
+                                                        port,
+                                                        cc,
+                                                        bcc,
+                                                        recipients,
+                                                        body,
+                                                        from,
+                                                        host,
+                                                        username,
+                                                        password,
+                                                        subject,
+                                                        trustSsl);
             return emailNotifier;
         }
 
         @Override
         public String toString() {
-            return "Builder{" + "auth=" + auth + ", debug=" + debug + ", enableStartTls=" + enableStartTls +
-                ", port=" + port + ", bcc=" + bcc + ", cc=" + cc + ", recipients=" + recipients + ", body='" +
-                body + '\'' + ", from='" + from + '\'' + ", host='" + host + '\'' + ", username='" +
-                username + '\'' + ", password='" + password + '\'' + ", subject='" + subject + '\'' +
-                ", trustSsl='" + trustSsl + '\'' + '}';
+            return "Builder{" + "auth=" + auth + ", debug=" + debug + ", enableStartTls=" + enableStartTls + ", port=" +
+                   port + ", bcc=" + bcc + ", cc=" + cc + ", recipients=" + recipients + ", body='" + body + '\'' +
+                   ", from='" + from + '\'' + ", host='" + host + '\'' + ", username='" + username + '\'' +
+                   ", password='" + password + '\'' + ", subject='" + subject + '\'' + ", trustSsl='" + trustSsl +
+                   '\'' + '}';
         }
 
     }

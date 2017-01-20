@@ -1,3 +1,28 @@
+/*
+ * ProActive Parallel Suite(TM):
+ * The Open Source library for parallel and distributed
+ * Workflows & Scheduling, Orchestration, Cloud Automation
+ * and Big Data Analysis on Enterprise Grids & Clouds.
+ *
+ * Copyright (c) 2007 - 2017 ActiveEon
+ * Contact: contact@activeeon.com
+ *
+ * This library is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License
+ * as published by the Free Software Foundation: version 3 of
+ * the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * If needed, contact us to obtain a release under GPL Version 2 or 3
+ * or a different license than the AGPL.
+ */
 package org.ow2.proactive.addons.email;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -34,14 +59,17 @@ public class EmailSenderIntegrationTest {
 
     @Test
     /*
-    * If this test for gmail in emailnotification-addons will fail with error.
-    * This can be due to security polices of Google.
-    * You need to go to https://www.google.com/accounts/DisplayUnlockCaptcha,
-    * then rerun the jenkins tasks and new application will be added as verified.
-    */
+     * If this test for gmail in emailnotification-addons will fail with error.
+     * This can be due to security polices of Google.
+     * You need to go to https://www.google.com/accounts/DisplayUnlockCaptcha,
+     * then rerun the jenkins tasks and new application will be added as verified.
+     */
     public void testEmailSenderUsingGmail() throws Exception {
-        testSendEmail("smtp.gmail.com", "imap.gmail.com", System.getenv("GMAIL_EMAIL"),
-                System.getenv("GMAIL_USERNAME"), System.getenv("GMAIL_PASSWORD"));
+        testSendEmail("smtp.gmail.com",
+                      "imap.gmail.com",
+                      System.getenv("GMAIL_EMAIL"),
+                      System.getenv("GMAIL_USERNAME"),
+                      System.getenv("GMAIL_PASSWORD"));
     }
 
     @Test
@@ -51,12 +79,15 @@ public class EmailSenderIntegrationTest {
     // is sent and the time at which it is accessible from the inbox. This problem seems not
     // to occurs with Gmail
     public void testEmailSenderUsingOutlook() throws Exception {
-        testSendEmail("smtp-mail.outlook.com", "imap-mail.outlook.com", System.getenv("OUTLOOK_EMAIL"),
-                System.getenv("OUTLOOK_USERNAME"), System.getenv("OUTLOOK_PASSWORD"));
+        testSendEmail("smtp-mail.outlook.com",
+                      "imap-mail.outlook.com",
+                      System.getenv("OUTLOOK_EMAIL"),
+                      System.getenv("OUTLOOK_USERNAME"),
+                      System.getenv("OUTLOOK_PASSWORD"));
     }
 
-    private void testSendEmail(String smtpFqdn, String imapFqdn, String email, String username,
-            String password) throws ConfigurationException, MessagingException {
+    private void testSendEmail(String smtpFqdn, String imapFqdn, String email, String username, String password)
+            throws ConfigurationException, MessagingException {
 
         ImmutableMap.Builder<String, Serializable> configuration = new ImmutableMap.Builder<>();
 
@@ -92,8 +123,8 @@ public class EmailSenderIntegrationTest {
         return "[emailnotification-addons-system-test] " + uuid;
     }
 
-    private boolean checkEmailReception(String expectedSubject, String imapFqdn, String username,
-            String password) throws MessagingException {
+    private boolean checkEmailReception(String expectedSubject, String imapFqdn, String username, String password)
+            throws MessagingException {
         Properties properties = new Properties();
         properties.put("mail.store.protocol", "imaps");
         Session session = Session.getInstance(properties);
@@ -122,8 +153,7 @@ public class EmailSenderIntegrationTest {
                     message.setFlag(Flags.Flag.DELETED, true);
                     found = true;
 
-                    System.out.println(
-                            "Message " + i + " satisfies expected subject, message marked as deleted");
+                    System.out.println("Message " + i + " satisfies expected subject, message marked as deleted");
                     break;
                 }
 
