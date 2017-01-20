@@ -270,13 +270,13 @@ public class EmailSender {
             recipients = new ArrayList<>();
         }
 
-        public Builder(Map<? extends Object, ? extends Object> options) {
+        public Builder(Map<?, ?> options) {
             this();
             loadJavaMailConfiguration(options);
             loadArguments(options);
         }
 
-        private void loadJavaMailConfiguration(Map<? extends Object, ? extends Object> options) {
+        private void loadJavaMailConfiguration(Map<?, ?> options) {
             String value = getAsString(options, PROPERTY_MAIL_DEBUG);
             if (value != null) {
                 debug = BooleanConverter.getInstance().convert(PROPERTY_MAIL_DEBUG, value);
@@ -321,7 +321,7 @@ public class EmailSender {
             }
         }
 
-        private void loadArguments(Map<? extends Object, ? extends Object> args) {
+        private void loadArguments(Map<?, ?> args) {
 
             if (args.containsKey(ARG_FROM)) {
                 from = getAsString(args, ARG_FROM);
@@ -348,12 +348,12 @@ public class EmailSender {
             }
         }
 
-        private ImmutableList<String> emailAddressesAsList(Map<? extends Object, ? extends Object> args,
+        private ImmutableList<String> emailAddressesAsList(Map<?, ?> args,
                 String argRecipients) {
             return ImmutableList.copyOf((getAsString(args, argRecipients)).split(REGEX_LIST_SEPARATOR));
         }
 
-        private String getAsString(Map<? extends Object, ? extends Object> map, String argFrom) {
+        private String getAsString(Map<?, ?> map, String argFrom) {
             return (String) map.get(argFrom);
         }
 

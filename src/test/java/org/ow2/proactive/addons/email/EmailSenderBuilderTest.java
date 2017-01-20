@@ -2,8 +2,15 @@ package org.ow2.proactive.addons.email;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.net.URI;
+import java.util.Properties;
 
+import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -13,6 +20,14 @@ import com.google.common.collect.ImmutableMap;
  * @author ActiveEon Team
  */
 public class EmailSenderBuilderTest {
+    
+    private static URI EMAIL_CONFIGURATION;
+
+    @BeforeClass
+    public static void setJobDescriptorcUri() throws Exception {
+        EMAIL_CONFIGURATION = EmailSenderBuilderTest.class.getResource(
+                "/org/ow2/proactive/addons/email/email.properties").toURI();
+    }
 
     @Test
     public void testDefaultValues() {
@@ -75,6 +90,27 @@ public class EmailSenderBuilderTest {
         assertThat(builder.isAuthEnabled()).isTrue();
         assertThat(builder.isStartTlsEnabled()).isTrue();
         assertThat(builder.getTrustSsl()).isEqualTo("all");
+    }
+
+    @Test
+    public void testConstructorProperties() {
+
+        final Properties properties = new Properties();
+        try{
+            InputStream fis = new FileInputStream(EMAIL_CONFIGURATION.getPath());
+            properties.load(fis);
+        }catch(IOException e){
+            Assert.fail(e.getMessage());
+        }
+
+        EmailSender.Builder builder = new EmailSender.Builder(properties);
+
+        assertThat(builder.getHost()).isEqualTo("smtp.gmail.com");
+        assertThat(builder.getPort()).isEqualTo(587);
+        assertThat(builder.getUsername()).isEqualTo("example@username.com");
+        assertThat(builder.getPassword()).isEqualTo("password");
+        assertThat(builder.isAuthEnabled()).isTrue();
+        assertThat(builder.isStartTlsEnabled()).isTrue();
     }
 
 }
