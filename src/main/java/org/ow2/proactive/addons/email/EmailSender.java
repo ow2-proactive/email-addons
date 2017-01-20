@@ -36,7 +36,6 @@
  */
 package org.ow2.proactive.addons.email;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -271,13 +270,13 @@ public class EmailSender {
             recipients = new ArrayList<>();
         }
 
-        public Builder(Map<String, Serializable> options) {
+        public Builder(Map<? extends Object, ? extends Object> options) {
             this();
             loadJavaMailConfiguration(options);
             loadArguments(options);
         }
 
-        private void loadJavaMailConfiguration(Map<String, Serializable> options) {
+        private void loadJavaMailConfiguration(Map<? extends Object, ? extends Object> options) {
             String value = getAsString(options, PROPERTY_MAIL_DEBUG);
             if (value != null) {
                 debug = BooleanConverter.getInstance().convert(PROPERTY_MAIL_DEBUG, value);
@@ -322,7 +321,7 @@ public class EmailSender {
             }
         }
 
-        private void loadArguments(Map<String, Serializable> args) {
+        private void loadArguments(Map<? extends Object, ? extends Object> args) {
 
             if (args.containsKey(ARG_FROM)) {
                 from = getAsString(args, ARG_FROM);
@@ -349,12 +348,12 @@ public class EmailSender {
             }
         }
 
-        private ImmutableList<String> emailAddressesAsList(Map<String, Serializable> args,
+        private ImmutableList<String> emailAddressesAsList(Map<? extends Object, ? extends Object> args,
                 String argRecipients) {
             return ImmutableList.copyOf((getAsString(args, argRecipients)).split(REGEX_LIST_SEPARATOR));
         }
 
-        private String getAsString(Map<String, Serializable> map, String argFrom) {
+        private String getAsString(Map<? extends Object, ? extends Object> map, String argFrom) {
             return (String) map.get(argFrom);
         }
 
