@@ -1,9 +1,41 @@
+/*
+ * ProActive Parallel Suite(TM):
+ * The Open Source library for parallel and distributed
+ * Workflows & Scheduling, Orchestration, Cloud Automation
+ * and Big Data Analysis on Enterprise Grids & Clouds.
+ *
+ * Copyright (c) 2007 - 2017 ActiveEon
+ * Contact: contact@activeeon.com
+ *
+ * This library is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License
+ * as published by the Free Software Foundation: version 3 of
+ * the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * If needed, contact us to obtain a release under GPL Version 2 or 3
+ * or a different license than the AGPL.
+ */
 package org.ow2.proactive.addons.email;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.net.URI;
+import java.util.Properties;
 
+import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -13,6 +45,14 @@ import com.google.common.collect.ImmutableMap;
  * @author ActiveEon Team
  */
 public class EmailSenderBuilderTest {
+
+    private static URI EMAIL_CONFIGURATION;
+
+    @BeforeClass
+    public static void setJobDescriptorcUri() throws Exception {
+        EMAIL_CONFIGURATION = EmailSenderBuilderTest.class.getResource("/org/ow2/proactive/addons/email/email.properties")
+                                                          .toURI();
+    }
 
     @Test
     public void testDefaultValues() {
@@ -75,6 +115,27 @@ public class EmailSenderBuilderTest {
         assertThat(builder.isAuthEnabled()).isTrue();
         assertThat(builder.isStartTlsEnabled()).isTrue();
         assertThat(builder.getTrustSsl()).isEqualTo("all");
+    }
+
+    @Test
+    public void testConstructorProperties() {
+
+        final Properties properties = new Properties();
+        try {
+            InputStream fis = new FileInputStream(EMAIL_CONFIGURATION.getPath());
+            properties.load(fis);
+        } catch (IOException e) {
+            Assert.fail(e.getMessage());
+        }
+
+        EmailSender.Builder builder = new EmailSender.Builder(properties);
+
+        assertThat(builder.getHost()).isEqualTo("smtp.gmail.com");
+        assertThat(builder.getPort()).isEqualTo(587);
+        assertThat(builder.getUsername()).isEqualTo("example@username.com");
+        assertThat(builder.getPassword()).isEqualTo("password");
+        assertThat(builder.isAuthEnabled()).isTrue();
+        assertThat(builder.isStartTlsEnabled()).isTrue();
     }
 
 }

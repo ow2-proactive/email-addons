@@ -2,7 +2,7 @@
 
 [![Build Status](http://jenkins.activeeon.com/buildStatus/icon?job=emailnotification-addons)](http://jenkins.activeeon.com/job/emailnotification-addons/)
 
-This project provides an utility class but also a Java task that allow 
+This project provides an utility class but also a Java task that allow
 to send an email from a ProActive Workflow.
 
 # Installation
@@ -19,10 +19,10 @@ Copy the JAR file in the `addons` folder of your ProActive installation.
 
 # Usage
 
-The email notification addons is included in the standard ProActive 
+The email notification addons is included in the standard ProActive
 Workflows and Scheduling distribution starting from version _7.15.0_.
 
-An email notification task example is available from the Studio Web 
+An email notification task example is available from the Studio Web
 application.
 
 Please look at the documentation for setting up the configuration:
