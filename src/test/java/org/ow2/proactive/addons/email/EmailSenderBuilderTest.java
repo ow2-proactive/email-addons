@@ -75,6 +75,8 @@ public class EmailSenderBuilderTest {
         assertThat(builder.getPassword()).isNull();
         assertThat(builder.getSubject()).isNull();
         assertThat(builder.getTrustSsl()).isEqualTo("*");
+        assertThat(builder.getFileToAttache()).isNull();
+        assertThat(builder.getFileName()).isEqualTo("Job_Logs");
     }
 
     @Test
@@ -88,6 +90,8 @@ public class EmailSenderBuilderTest {
         config.put(EmailSender.ARG_BCC, "f, g,h, i");
         config.put(EmailSender.ARG_SUBJECT, "subject");
         config.put(EmailSender.ARG_BODY, "body");
+        config.put(EmailSender.ARG_FILETOATTACHE, "file_path");
+        config.put(EmailSender.ARG_FILENAME, "file_name");
 
         config.put(EmailSender.PROPERTY_MAIL_DEBUG, "true");
         config.put(EmailSender.PROPERTY_MAIL_SMTP_HOST, "smtp.host.com");
@@ -115,6 +119,8 @@ public class EmailSenderBuilderTest {
         assertThat(builder.isAuthEnabled()).isTrue();
         assertThat(builder.isStartTlsEnabled()).isTrue();
         assertThat(builder.getTrustSsl()).isEqualTo("all");
+        assertThat(builder.getFileToAttache()).isEqualTo("file_path");
+        assertThat(builder.getFileName()).isEqualTo("file_name");
     }
 
     @Test

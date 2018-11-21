@@ -73,7 +73,9 @@ public class EmailSenderTest {
                                                   "username",
                                                   "password",
                                                   "subject",
-                                                  "trust");
+                                                  "trust",
+                                                  "file_path",
+                                                  "file_name");
 
         assertThat(emailSender.auth).isFalse();
         assertThat(emailSender.debug).isTrue();
@@ -109,7 +111,9 @@ public class EmailSenderTest {
                         "username",
                         "password",
                         "This is a really really really really long subject that will exceed the authorized length",
-                        "trust");
+                        "trust",
+                        "file_path",
+                        "file_name");
     }
 
     @Test(expected = MissingArgumentException.class)
@@ -127,7 +131,9 @@ public class EmailSenderTest {
                         "username",
                         "password",
                         "This is a really really really really long subject that will exceed the authorized length",
-                        "trust");
+                        "trust",
+                        "file_path",
+                        "file_name");
     }
 
     @Test(expected = MissingArgumentException.class)
@@ -145,7 +151,9 @@ public class EmailSenderTest {
                         "username",
                         "password",
                         null,
-                        "trust");
+                        "trust",
+                        "file_path",
+                        "file_name");
     }
 
     @Test(expected = MissingArgumentException.class)
@@ -163,7 +171,9 @@ public class EmailSenderTest {
                         "username",
                         "password",
                         "subject",
-                        "trust");
+                        "trust",
+                        "file_path",
+                        "file_name");
     }
 
     @Test
@@ -181,7 +191,9 @@ public class EmailSenderTest {
                                                   "username",
                                                   "password",
                                                   "subject",
-                                                  "trust");
+                                                  "trust",
+                                                  "file_path",
+                                                  "file_name");
 
         Properties properties = emailSender.buildSmtpConfiguration();
 
@@ -212,7 +224,9 @@ public class EmailSenderTest {
                                                   "username",
                                                   "password",
                                                   "subject",
-                                                  "trust");
+                                                  "trust",
+                                                  "file_path",
+                                                  "file_name");
 
         MimeMessage mimeMessageMock = Mockito.mock(MimeMessage.class);
 
@@ -253,7 +267,9 @@ public class EmailSenderTest {
                                                   "username",
                                                   "password",
                                                   "subject",
-                                                  "trust");
+                                                  "trust",
+                                                  "file_path",
+                                                  "file_name");
 
         MimeMessage mimeMessageMock = Mockito.mock(MimeMessage.class);
         Transport transportMock = Mockito.mock(Transport.class);

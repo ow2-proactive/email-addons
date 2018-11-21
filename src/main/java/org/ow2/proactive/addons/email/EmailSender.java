@@ -30,14 +30,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
 import javax.mail.Address;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 import org.ow2.proactive.addons.email.converters.BooleanConverter;
 import org.ow2.proactive.addons.email.converters.IntegerConverter;
@@ -72,6 +78,10 @@ public class EmailSender {
     public static final String ARG_SUBJECT = "subject";
 
     public static final String ARG_BODY = "body";
+
+    public static final String ARG_FILETOATTACHE = "file_path";
+
+    public static final String ARG_FILENAME = "file_name";
 
     /*
      * Define javax.mail properties that will be loaded from third-party credentials
@@ -125,9 +135,13 @@ public class EmailSender {
 
     protected String trustSsl = "*";
 
+    protected String fileToAttache;
+
+    protected String fileName = "Job_Logs";
+
     protected EmailSender(boolean auth, boolean debug, boolean enableStartTls, int port, List<String> cc,
             List<String> bcc, List<String> recipients, String body, String from, String host, String username,
-            String password, String subject, String trustSsl) {
+            String password, String subject, String trustSsl, String fileToAttache, String fileName) {
         this.auth = auth;
         this.bcc = bcc;
         this.body = body;
@@ -142,8 +156,35 @@ public class EmailSender {
         this.subject = subject;
         this.trustSsl = trustSsl;
         this.username = username;
+        this.fileToAttache = fileToAttache;
+        this.fileName = fileName;
 
         checkInstanceFieldsConsistency();
+    }
+
+    public void sendPlainTextEmailWithAttachement() {
+        Properties props = buildSmtpConfiguration();
+        Session session = Session.getDefaultInstance(props);
+        MimeMessage message = new MimeMessage(session);
+        Transport transport = null;
+
+        try {
+            configurePlainTextMessageWithAttachment(message);
+            transport = session.getTransport("smtp");
+            connectAndSendMessage(message, transport);
+        } catch (AddressException e) {
+            throw new EmailException(e);
+        } catch (MessagingException e) {
+            throw new EmailException(e.getMessage());
+        } finally {
+            if (transport != null) {
+                try {
+                    transport.close();
+                } catch (MessagingException e) {
+                    throw new EmailException(e);
+                }
+            }
+        }
     }
 
     public void sendPlainTextEmail() {
@@ -211,6 +252,23 @@ public class EmailSender {
         message.setText(body);
     }
 
+    protected void configurePlainTextMessageWithAttachment(MimeMessage message) throws MessagingException {
+        configurePlainTextMessage(message);
+
+        MimeBodyPart messageBodyPart = new MimeBodyPart();
+
+        Multipart multipart = new MimeMultipart();
+
+        String file = fileToAttache;
+        String name = fileName;
+        DataSource source = new FileDataSource(file);
+        messageBodyPart.setDataHandler(new DataHandler(source));
+        messageBodyPart.setFileName(name);
+        multipart.addBodyPart(messageBodyPart);
+
+        message.setContent(multipart);
+    }
+
     protected void connectAndSendMessage(MimeMessage message, Transport transport) throws MessagingException {
         transport.connect(username, password);
         transport.sendMessage(message, message.getAllRecipients());
@@ -272,6 +330,10 @@ public class EmailSender {
         private String subject;
 
         private String trustSsl = "*";
+
+        private String fileToAttache;
+
+        private String fileName = "Job_Logs";
 
         public Builder() {
             bcc = new ArrayList<>();
@@ -345,6 +407,14 @@ public class EmailSender {
 
             if (args.containsKey(ARG_BODY)) {
                 body = getAsString(args, ARG_BODY);
+            }
+
+            if (args.containsKey(ARG_FILETOATTACHE)) {
+                fileToAttache = getAsString(args, ARG_FILETOATTACHE);
+            }
+
+            if (args.containsKey(ARG_FILENAME)) {
+                fileName = getAsString(args, ARG_FILENAME);
             }
 
             if (args.containsKey(ARG_CC)) {
@@ -545,6 +615,16 @@ public class EmailSender {
             return this;
         }
 
+        public Builder setAttachementPath(String filToAttache) {
+            this.fileToAttache = filToAttache;
+            return this;
+        }
+
+        public Builder setAttachementName(String fileName) {
+            this.fileName = fileName;
+            return this;
+        }
+
         public boolean isDebugEnabled() {
             return debug;
         }
@@ -601,6 +681,14 @@ public class EmailSender {
             return trustSsl;
         }
 
+        public String getFileToAttache() {
+            return fileToAttache;
+        }
+
+        public String getFileName() {
+            return fileName;
+        }
+
         public EmailSender build() {
             EmailSender emailNotifier = new EmailSender(auth,
                                                         debug,
@@ -615,7 +703,9 @@ public class EmailSender {
                                                         username,
                                                         password,
                                                         subject,
-                                                        trustSsl);
+                                                        trustSsl,
+                                                        fileToAttache,
+                                                        fileName);
             return emailNotifier;
         }
 
