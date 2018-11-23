@@ -79,7 +79,7 @@ public class EmailSender {
 
     public static final String ARG_BODY = "body";
 
-    public static final String ARG_FILETOATTACHE = "file_path";
+    public static final String ARG_FILETOATTACH = "file_path";
 
     public static final String ARG_FILENAME = "file_name";
 
@@ -135,13 +135,13 @@ public class EmailSender {
 
     protected String trustSsl = "*";
 
-    protected String fileToAttache;
+    protected String fileToAttach;
 
-    protected String fileName = "Job_Logs";
+    protected String fileName = "attachment.txt";
 
     protected EmailSender(boolean auth, boolean debug, boolean enableStartTls, int port, List<String> cc,
             List<String> bcc, List<String> recipients, String body, String from, String host, String username,
-            String password, String subject, String trustSsl, String fileToAttache, String fileName) {
+            String password, String subject, String trustSsl, String fileToAttach, String fileName) {
         this.auth = auth;
         this.bcc = bcc;
         this.body = body;
@@ -156,13 +156,13 @@ public class EmailSender {
         this.subject = subject;
         this.trustSsl = trustSsl;
         this.username = username;
-        this.fileToAttache = fileToAttache;
+        this.fileToAttach = fileToAttach;
         this.fileName = fileName;
 
         checkInstanceFieldsConsistency();
     }
 
-    public void sendPlainTextEmailWithAttachement() {
+    public void sendPlainTextEmailWithAttachment() {
         Properties props = buildSmtpConfiguration();
         Session session = Session.getDefaultInstance(props);
         MimeMessage message = new MimeMessage(session);
@@ -259,8 +259,16 @@ public class EmailSender {
 
         Multipart multipart = new MimeMultipart();
 
-        String file = fileToAttache;
+        String file = fileToAttach;
+        if (file == null) {
+            throw new MissingArgumentException("attached_file_path");
+        }
+
         String name = fileName;
+        if (name == null) {
+            throw new MissingArgumentException("attached_file_name");
+        }
+
         DataSource source = new FileDataSource(file);
         messageBodyPart.setDataHandler(new DataHandler(source));
         messageBodyPart.setFileName(name);
@@ -331,9 +339,9 @@ public class EmailSender {
 
         private String trustSsl = "*";
 
-        private String fileToAttache;
+        private String fileToAttach;
 
-        private String fileName = "Job_Logs";
+        private String fileName = "attachment.txt";
 
         public Builder() {
             bcc = new ArrayList<>();
@@ -409,8 +417,8 @@ public class EmailSender {
                 body = getAsString(args, ARG_BODY);
             }
 
-            if (args.containsKey(ARG_FILETOATTACHE)) {
-                fileToAttache = getAsString(args, ARG_FILETOATTACHE);
+            if (args.containsKey(ARG_FILETOATTACH)) {
+                fileToAttach = getAsString(args, ARG_FILETOATTACH);
             }
 
             if (args.containsKey(ARG_FILENAME)) {
@@ -615,12 +623,12 @@ public class EmailSender {
             return this;
         }
 
-        public Builder setAttachementPath(String filToAttache) {
-            this.fileToAttache = filToAttache;
+        public Builder setAttachmentPath(String filToAttach) {
+            this.fileToAttach = filToAttach;
             return this;
         }
 
-        public Builder setAttachementName(String fileName) {
+        public Builder setAttachmentName(String fileName) {
             this.fileName = fileName;
             return this;
         }
@@ -681,8 +689,8 @@ public class EmailSender {
             return trustSsl;
         }
 
-        public String getFileToAttache() {
-            return fileToAttache;
+        public String getFileToAttach() {
+            return fileToAttach;
         }
 
         public String getFileName() {
@@ -704,7 +712,7 @@ public class EmailSender {
                                                         password,
                                                         subject,
                                                         trustSsl,
-                                                        fileToAttache,
+                                                        fileToAttach,
                                                         fileName);
             return emailNotifier;
         }
