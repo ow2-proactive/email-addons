@@ -255,8 +255,6 @@ public class EmailSender {
     protected void configurePlainTextMessageWithAttachment(MimeMessage message) throws MessagingException {
         configurePlainTextMessage(message);
 
-        MimeBodyPart messageBodyPart = new MimeBodyPart();
-
         Multipart multipart = new MimeMultipart();
 
         String file = fileToAttach;
@@ -269,10 +267,16 @@ public class EmailSender {
             throw new MissingArgumentException("attached_file_name");
         }
 
-        DataSource source = new FileDataSource(file);
-        messageBodyPart.setDataHandler(new DataHandler(source));
-        messageBodyPart.setFileName(name);
+        MimeBodyPart messageBodyPart = new MimeBodyPart();
+        messageBodyPart.setText(body);
         multipart.addBodyPart(messageBodyPart);
+
+        MimeBodyPart messageAttachmentPart = new MimeBodyPart();
+
+        DataSource source = new FileDataSource(file);
+        messageAttachmentPart.setDataHandler(new DataHandler(source));
+        messageAttachmentPart.setFileName(name);
+        multipart.addBodyPart(messageAttachmentPart);
 
         message.setContent(multipart);
     }
