@@ -25,10 +25,7 @@
  */
 package org.ow2.proactive.addons.email;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -47,6 +44,7 @@ import javax.mail.internet.MimeMultipart;
 
 import org.ow2.proactive.addons.email.converters.BooleanConverter;
 import org.ow2.proactive.addons.email.converters.IntegerConverter;
+import org.ow2.proactive.addons.email.exception.ConversionException;
 import org.ow2.proactive.addons.email.exception.EmailException;
 import org.ow2.proactive.addons.email.exception.InvalidArgumentException;
 import org.ow2.proactive.addons.email.exception.MissingArgumentException;
@@ -62,6 +60,8 @@ import com.google.common.collect.ImmutableList;
 public class EmailSender {
 
     private static final String REGEX_LIST_SEPARATOR = ",\\s?";
+
+    private static final String SMTP_PROPERTY_PREFIX = "mail.smtp.";
 
     /*
      * Define name of arguments that can be passed to the Java task
@@ -139,6 +139,8 @@ public class EmailSender {
 
     protected String fileName = "attachment.txt";
 
+    protected Properties properties;
+
     protected EmailSender(boolean auth, boolean debug, boolean enableStartTls, int port, List<String> cc,
             List<String> bcc, List<String> recipients, String body, String from, String host, String username,
             String password, String subject, String trustSsl, String fileToAttach, String fileName) {
@@ -158,8 +160,13 @@ public class EmailSender {
         this.username = username;
         this.fileToAttach = fileToAttach;
         this.fileName = fileName;
+        this.properties = new Properties();
 
         checkInstanceFieldsConsistency();
+    }
+
+    private void setProperties(Properties properties) {
+        this.properties = properties;
     }
 
     public void sendPlainTextEmailWithAttachment() {
@@ -172,10 +179,8 @@ public class EmailSender {
             configurePlainTextMessageWithAttachment(message);
             transport = session.getTransport("smtp");
             connectAndSendMessage(message, transport);
-        } catch (AddressException e) {
-            throw new EmailException(e);
         } catch (MessagingException e) {
-            throw new EmailException(e.getMessage());
+            throw new EmailException(e);
         } finally {
             if (transport != null) {
                 try {
@@ -196,13 +201,10 @@ public class EmailSender {
 
         try {
             configurePlainTextMessage(message);
-
             transport = session.getTransport("smtp");
             connectAndSendMessage(message, transport);
-        } catch (AddressException e) {
-            throw new EmailException(e);
         } catch (MessagingException e) {
-            throw new EmailException(e.getMessage());
+            throw new EmailException(e);
         } finally {
             if (transport != null) {
                 try {
@@ -216,15 +218,40 @@ public class EmailSender {
 
     protected Properties buildSmtpConfiguration() {
         Properties props = new Properties();
-
         props.put(PROPERTY_MAIL_DEBUG, debug);
         props.put(PROPERTY_MAIL_SMTP_HOST, host);
         props.put(PROPERTY_MAIL_SMTP_PORT, port);
         props.put(PROPERTY_MAIL_SMTP_AUTH, auth);
         props.put(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, enableStartTls);
         props.put(PROPERTY_MAIL_SMTP_SSL_TRUST, trustSsl);
+        buildRemainingProperties(props);
 
         return props;
+    }
+
+    private void buildRemainingProperties(Properties props) {
+        for (Map.Entry prop : properties.entrySet()) {
+            if (prop.getKey().toString().startsWith(SMTP_PROPERTY_PREFIX)) {
+                String strValue = String.valueOf(prop.getValue());
+                String strKey = String.valueOf(prop.getKey());
+
+                if (strValue.equals(Boolean.TRUE.toString()) || strValue.equals(Boolean.FALSE.toString())) {
+                    props.put(prop.getKey(), Boolean.valueOf(strValue));
+                    continue;
+                }
+
+                try {
+                    int intValue = IntegerConverter.getInstance().convert(strKey, strValue);
+                    props.put(strKey, intValue);
+                    continue;
+                } catch (ConversionException e) {
+                    // It is not an Integer, continue loop
+                }
+
+                // If it's neither a boolean nor an int, then it's a String
+                props.put(strKey, strValue);
+            }
+        }
     }
 
     protected void configurePlainTextMessage(MimeMessage message) throws MessagingException {
@@ -347,27 +374,34 @@ public class EmailSender {
 
         private String fileName = "attachment.txt";
 
+        private Properties properties;
+
         public Builder() {
             bcc = new ArrayList<>();
             cc = new ArrayList<>();
             recipients = new ArrayList<>();
+            properties = new Properties();
         }
 
         public Builder(Map<?, ?> options) {
             this();
-            loadJavaMailConfiguration(options);
-            loadArguments(options);
+            Map<?, ?> opts = new HashMap<>(options);
+            loadArguments(opts);
+            loadJavaMailConfiguration(opts);
+            withProperties(opts);
         }
 
         private void loadJavaMailConfiguration(Map<?, ?> options) {
             String value = getAsString(options, PROPERTY_MAIL_DEBUG);
             if (value != null) {
                 debug = BooleanConverter.getInstance().convert(PROPERTY_MAIL_DEBUG, value);
+                options.remove(PROPERTY_MAIL_DEBUG);
             }
 
             value = getAsString(options, PROPERTY_MAIL_SMTP_HOST);
             if (value != null) {
                 host = value;
+                options.remove(PROPERTY_MAIL_SMTP_HOST);
             } else {
                 throw new MissingArgumentException(PROPERTY_MAIL_SMTP_HOST);
             }
@@ -375,31 +409,37 @@ public class EmailSender {
             value = getAsString(options, PROPERTY_MAIL_SMTP_PORT);
             if (value != null) {
                 port = IntegerConverter.getInstance().convert(PROPERTY_MAIL_SMTP_PORT, value);
+                options.remove(PROPERTY_MAIL_SMTP_PORT);
             }
 
             value = getAsString(options, PROPERTY_MAIL_SMTP_USERNAME);
             if (value != null) {
                 username = value;
+                options.remove(PROPERTY_MAIL_SMTP_USERNAME);
             }
 
             value = getAsString(options, PROPERTY_MAIL_SMTP_PASSWORD);
             if (value != null) {
                 password = value;
+                options.remove(PROPERTY_MAIL_SMTP_PASSWORD);
             }
 
             value = getAsString(options, PROPERTY_MAIL_SMTP_AUTH);
             if (value != null) {
                 auth = BooleanConverter.getInstance().convert(PROPERTY_MAIL_SMTP_AUTH, value);
+                options.remove(PROPERTY_MAIL_SMTP_AUTH);
             }
 
             value = getAsString(options, PROPERTY_MAIL_SMTP_STARTTLS_ENABLE);
             if (value != null) {
                 enableStartTls = BooleanConverter.getInstance().convert(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, value);
+                options.remove(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE);
             }
 
             value = getAsString(options, PROPERTY_MAIL_SMTP_SSL_TRUST);
             if (value != null) {
                 trustSsl = value;
+                options.remove(PROPERTY_MAIL_SMTP_SSL_TRUST);
             }
         }
 
@@ -407,34 +447,42 @@ public class EmailSender {
 
             if (args.containsKey(ARG_FROM)) {
                 from = getAsString(args, ARG_FROM);
+                args.remove(ARG_FROM);
             }
 
             if (args.containsKey(ARG_RECIPIENTS)) {
                 recipients.addAll(emailAddressesAsList(args, ARG_RECIPIENTS));
+                args.remove(ARG_RECIPIENTS);
             }
 
             if (args.containsKey(ARG_SUBJECT)) {
                 subject = getAsString(args, ARG_SUBJECT);
+                args.remove(ARG_SUBJECT);
             }
 
             if (args.containsKey(ARG_BODY)) {
                 body = getAsString(args, ARG_BODY);
+                args.remove(ARG_BODY);
             }
 
             if (args.containsKey(ARG_FILETOATTACH)) {
                 fileToAttach = getAsString(args, ARG_FILETOATTACH);
+                args.remove(ARG_FILETOATTACH);
             }
 
             if (args.containsKey(ARG_FILENAME)) {
                 fileName = getAsString(args, ARG_FILENAME);
+                args.remove(ARG_FILENAME);
             }
 
             if (args.containsKey(ARG_CC)) {
                 cc.addAll(emailAddressesAsList(args, ARG_CC));
+                args.remove(ARG_CC);
             }
 
             if (args.containsKey(ARG_BCC)) {
                 bcc.addAll(emailAddressesAsList(args, ARG_BCC));
+                args.remove(ARG_BCC);
             }
         }
 
@@ -637,6 +685,11 @@ public class EmailSender {
             return this;
         }
 
+        public void withProperties(Map<?, ?> properties) {
+            this.properties = new Properties();
+            this.properties.putAll(properties);
+        }
+
         public boolean isDebugEnabled() {
             return debug;
         }
@@ -701,6 +754,10 @@ public class EmailSender {
             return fileName;
         }
 
+        public Properties getProperties() {
+            return properties;
+        }
+
         public EmailSender build() {
             EmailSender emailNotifier = new EmailSender(auth,
                                                         debug,
@@ -718,6 +775,7 @@ public class EmailSender {
                                                         trustSsl,
                                                         fileToAttach,
                                                         fileName);
+            emailNotifier.setProperties(properties);
             return emailNotifier;
         }
 

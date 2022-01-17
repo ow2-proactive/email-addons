@@ -48,6 +48,12 @@ public class EmailSenderBuilderTest {
 
     private static URI EMAIL_CONFIGURATION;
 
+    private static final String EXTRA_PROPERTY_MAIL_SMTP_SSL_ENABLE = "mail.smtp.ssl.enable";
+
+    private static final String EXTRA_PROPERTY_MAIL_SMTP_CONNECTIONTIMEOUT = "mail.smtp.connectiontimeout";
+
+    private static final String EXTRA_PROPERTY_MAIL_SMTP_CIPHERSUITES = "mail.smtp.ssl.ciphersuites";
+
     @BeforeClass
     public static void setJobDescriptorcUri() throws Exception {
         EMAIL_CONFIGURATION = EmailSenderBuilderTest.class.getResource("/org/ow2/proactive/addons/email/email.properties")
@@ -77,6 +83,7 @@ public class EmailSenderBuilderTest {
         assertThat(builder.getTrustSsl()).isEqualTo("*");
         assertThat(builder.getFileToAttach()).isNull();
         assertThat(builder.getFileName()).isEqualTo("attachment.txt");
+        assertThat(builder.getProperties()).isEmpty();
     }
 
     @Test
@@ -121,6 +128,7 @@ public class EmailSenderBuilderTest {
         assertThat(builder.getTrustSsl()).isEqualTo("all");
         assertThat(builder.getFileToAttach()).isEqualTo("file_path");
         assertThat(builder.getFileName()).isEqualTo("file_name");
+        assertThat(builder.getProperties()).isEmpty();
     }
 
     @Test
@@ -144,4 +152,87 @@ public class EmailSenderBuilderTest {
         assertThat(builder.isStartTlsEnabled()).isTrue();
     }
 
+    @Test
+    public void testExtraPropertiesAreSaved() {
+        ImmutableMap.Builder<String, Serializable> config = ImmutableMap.builder();
+
+        config.put(EmailSender.ARG_FROM, "from");
+        config.put(EmailSender.ARG_RECIPIENTS, "a,b,c");
+        config.put(EmailSender.ARG_CC, "d, e");
+        config.put(EmailSender.ARG_BCC, "f, g,h, i");
+        config.put(EmailSender.ARG_SUBJECT, "subject");
+        config.put(EmailSender.ARG_BODY, "body");
+        config.put(EmailSender.ARG_FILETOATTACH, "file_path");
+        config.put(EmailSender.ARG_FILENAME, "file_name");
+
+        config.put(EmailSender.PROPERTY_MAIL_DEBUG, "true");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_HOST, "smtp.host.com");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_PORT, "25");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_USERNAME, "username");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_PASSWORD, "password");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_AUTH, "true");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, "true");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_SSL_TRUST, "all");
+        config.put(EXTRA_PROPERTY_MAIL_SMTP_SSL_ENABLE, "true");
+        config.put(EXTRA_PROPERTY_MAIL_SMTP_CONNECTIONTIMEOUT, "120000");
+
+        EmailSender.Builder builder = new EmailSender.Builder(config.build());
+
+        assertThat(builder.getFrom()).isEqualTo("from");
+        assertThat(builder.getRecipients()).containsExactly("a", "b", "c");
+        assertThat(builder.getCc()).containsExactly("d", "e");
+        assertThat(builder.getBcc()).containsExactly("f", "g", "h", "i");
+        assertThat(builder.getSubject()).isEqualTo("subject");
+        assertThat(builder.getBody()).isEqualTo("body");
+
+        assertThat(builder.isDebugEnabled()).isTrue();
+        assertThat(builder.getHost()).isEqualTo("smtp.host.com");
+        assertThat(builder.getPort()).isEqualTo(25);
+        assertThat(builder.getUsername()).isEqualTo("username");
+        assertThat(builder.getPassword()).isEqualTo("password");
+        assertThat(builder.isAuthEnabled()).isTrue();
+        assertThat(builder.isStartTlsEnabled()).isTrue();
+        assertThat(builder.getTrustSsl()).isEqualTo("all");
+        assertThat(builder.getFileToAttach()).isEqualTo("file_path");
+        assertThat(builder.getFileName()).isEqualTo("file_name");
+        assertThat(builder.getProperties().size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testExtraPropertiesWitherOverridesValues() {
+        ImmutableMap.Builder<String, Serializable> config = ImmutableMap.builder();
+
+        config.put(EmailSender.ARG_FROM, "from");
+        config.put(EmailSender.ARG_RECIPIENTS, "a,b,c");
+        config.put(EmailSender.ARG_CC, "d, e");
+        config.put(EmailSender.ARG_BCC, "f, g,h, i");
+        config.put(EmailSender.ARG_SUBJECT, "subject");
+        config.put(EmailSender.ARG_BODY, "body");
+        config.put(EmailSender.ARG_FILETOATTACH, "file_path");
+        config.put(EmailSender.ARG_FILENAME, "file_name");
+
+        config.put(EmailSender.PROPERTY_MAIL_DEBUG, "true");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_HOST, "smtp.host.com");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_PORT, "25");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_USERNAME, "username");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_PASSWORD, "password");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_AUTH, "true");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, "true");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_SSL_TRUST, "all");
+
+        config.put(EXTRA_PROPERTY_MAIL_SMTP_CONNECTIONTIMEOUT, "120000");
+
+        EmailSender.Builder builder = new EmailSender.Builder(config.build());
+        assertThat(builder.getProperties().size()).isEqualTo(1);
+        assertThat(builder.getProperties().get(EXTRA_PROPERTY_MAIL_SMTP_CONNECTIONTIMEOUT)).isNotNull();
+
+        ImmutableMap.Builder<String, Serializable> props = ImmutableMap.builder();
+        props.put(EXTRA_PROPERTY_MAIL_SMTP_SSL_ENABLE, "from");
+        props.put(EXTRA_PROPERTY_MAIL_SMTP_CIPHERSUITES, "DHE_RSA_AES256_SHA256");
+        ImmutableMap resultProperties = props.build();
+        // Override the two previous properties
+        builder.withProperties(resultProperties);
+
+        assertThat(builder.getProperties()).containsExactlyEntriesIn(resultProperties);
+    }
 }
