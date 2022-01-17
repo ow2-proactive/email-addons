@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.junit.Assert;
@@ -199,7 +201,7 @@ public class EmailSenderBuilderTest {
     }
 
     @Test
-    public void testExtraPropertiesWitherOverridesValues() {
+    public void testExtraPropertiesWitherDoesNotReinitialize() {
         ImmutableMap.Builder<String, Serializable> config = ImmutableMap.builder();
 
         config.put(EmailSender.ARG_FROM, "from");
@@ -233,6 +235,11 @@ public class EmailSenderBuilderTest {
         // Override the two previous properties
         builder.withProperties(resultProperties);
 
-        assertThat(builder.getProperties()).containsExactlyEntriesIn(resultProperties);
+        ImmutableMap.Builder<String, Serializable> allExtraProperties = ImmutableMap.builder();
+        allExtraProperties.put(EXTRA_PROPERTY_MAIL_SMTP_SSL_ENABLE, "from");
+        allExtraProperties.put(EXTRA_PROPERTY_MAIL_SMTP_CIPHERSUITES, "DHE_RSA_AES256_SHA256");
+        allExtraProperties.put(EXTRA_PROPERTY_MAIL_SMTP_CONNECTIONTIMEOUT, "120000");
+
+        assertThat(builder.getProperties()).containsExactlyEntriesIn(allExtraProperties.build());
     }
 }

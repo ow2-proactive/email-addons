@@ -686,7 +686,6 @@ public class EmailSender {
         }
 
         public void withProperties(Map<?, ?> properties) {
-            this.properties = new Properties();
             this.properties.putAll(properties);
         }
 
