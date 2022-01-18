@@ -63,7 +63,7 @@ repositories {
         mavenLocal()
     }
 
-    jcenter()
+    mavenCentral()
     maven { url 'http://repository.activeeon.com/content/groups/proactive/' }
 }
 
