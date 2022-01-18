@@ -192,6 +192,35 @@ public class EmailSenderBuilderTest {
         assertThat(builder.getFileToAttach()).isEqualTo("file_path");
         assertThat(builder.getFileName()).isEqualTo("file_name");
         assertThat(builder.getProperties().size()).isEqualTo(8);
+    }
+
+    @Test
+    public void testExtraPropertiesWitherDoesNotReinitialize() {
+        ImmutableMap.Builder<String, Serializable> config = ImmutableMap.builder();
+
+        config.put(EmailSender.ARG_FROM, "from");
+        config.put(EmailSender.ARG_RECIPIENTS, "a,b,c");
+        config.put(EmailSender.ARG_CC, "d, e");
+        config.put(EmailSender.ARG_BCC, "f, g,h, i");
+        config.put(EmailSender.ARG_SUBJECT, "subject");
+        config.put(EmailSender.ARG_BODY, "body");
+        config.put(EmailSender.ARG_FILETOATTACH, "file_path");
+        config.put(EmailSender.ARG_FILENAME, "file_name");
+
+        config.put(EmailSender.PROPERTY_MAIL_DEBUG, "true");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_HOST, "smtp.host.com");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_PORT, "25");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_USERNAME, "username");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_PASSWORD, "password");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_AUTH, "true");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, "true");
+        config.put(EmailSender.PROPERTY_MAIL_SMTP_SSL_TRUST, "all");
+
+        config.put(EXTRA_PROPERTY_MAIL_SMTP_CONNECTIONTIMEOUT, "120000");
+
+        EmailSender.Builder builder = new EmailSender.Builder(config.build());
+        assertThat(builder.getProperties().size()).isEqualTo(1);
+        assertThat(builder.getProperties().get(EXTRA_PROPERTY_MAIL_SMTP_CONNECTIONTIMEOUT)).isNotNull();
 
         ImmutableMap.Builder<String, Serializable> extraProps = ImmutableMap.builder();
         extraProps.put(EXTRA_PROPERTY_MAIL_SMTP_SSL_ENABLE, "true");
