@@ -30,25 +30,19 @@ import java.util.*;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.FileDataSource;
-import javax.mail.Address;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.AddressException;
+import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
-import org.ow2.proactive.addons.email.converters.BooleanConverter;
 import org.ow2.proactive.addons.email.converters.IntegerConverter;
 import org.ow2.proactive.addons.email.exception.ConversionException;
 import org.ow2.proactive.addons.email.exception.EmailException;
 import org.ow2.proactive.addons.email.exception.InvalidArgumentException;
 import org.ow2.proactive.addons.email.exception.MissingArgumentException;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 
 
@@ -61,7 +55,7 @@ public class EmailSender {
 
     private static final String REGEX_LIST_SEPARATOR = ",\\s?";
 
-    private static final String SMTP_PROPERTY_PREFIX = "mail.smtp.";
+    private static final String SMTP_PROPERTY_PREFIX = "mail.";
 
     /*
      * Define name of arguments that can be passed to the Java task
@@ -103,18 +97,6 @@ public class EmailSender {
 
     public static final String PROPERTY_MAIL_SMTP_SSL_TRUST = "mail.smtp.ssl.trust";
 
-    /*
-     * Instance variables
-     */
-
-    protected boolean auth = true;
-
-    protected boolean debug = false;
-
-    protected boolean enableStartTls = false;
-
-    protected int port = 587;
-
     protected List<String> cc;
 
     protected List<String> bcc;
@@ -125,15 +107,7 @@ public class EmailSender {
 
     protected String from;
 
-    protected String host;
-
-    protected String username;
-
-    protected String password;
-
     protected String subject;
-
-    protected String trustSsl = "*";
 
     protected String fileToAttach;
 
@@ -141,26 +115,17 @@ public class EmailSender {
 
     protected Properties properties;
 
-    protected EmailSender(boolean auth, boolean debug, boolean enableStartTls, int port, List<String> cc,
-            List<String> bcc, List<String> recipients, String body, String from, String host, String username,
-            String password, String subject, String trustSsl, String fileToAttach, String fileName) {
-        this.auth = auth;
+    protected EmailSender(Properties properties, List<String> cc, List<String> bcc, List<String> recipients,
+            String body, String from, String subject, String fileToAttach, String fileName) {
+        this.properties = properties;
         this.bcc = bcc;
         this.body = body;
         this.cc = cc;
-        this.debug = debug;
-        this.enableStartTls = enableStartTls;
         this.from = from;
-        this.host = host;
-        this.password = password;
-        this.port = port;
         this.recipients = recipients;
         this.subject = subject;
-        this.trustSsl = trustSsl;
-        this.username = username;
         this.fileToAttach = fileToAttach;
         this.fileName = fileName;
-        this.properties = new Properties();
 
         checkInstanceFieldsConsistency();
     }
@@ -171,7 +136,7 @@ public class EmailSender {
 
     public void sendPlainTextEmailWithAttachment() {
         Properties props = buildSmtpConfiguration();
-        Session session = Session.getDefaultInstance(props);
+        Session session = Session.getDefaultInstance(props, buildAuthenticator());
         MimeMessage message = new MimeMessage(session);
         Transport transport = null;
 
@@ -195,7 +160,7 @@ public class EmailSender {
     public void sendPlainTextEmail() {
         Properties props = buildSmtpConfiguration();
 
-        Session session = Session.getInstance(props);
+        Session session = Session.getInstance(props, buildAuthenticator());
         MimeMessage message = new MimeMessage(session);
         Transport transport = null;
 
@@ -212,44 +177,6 @@ public class EmailSender {
                 } catch (MessagingException e) {
                     throw new EmailException(e);
                 }
-            }
-        }
-    }
-
-    protected Properties buildSmtpConfiguration() {
-        Properties props = new Properties();
-        props.put(PROPERTY_MAIL_DEBUG, debug);
-        props.put(PROPERTY_MAIL_SMTP_HOST, host);
-        props.put(PROPERTY_MAIL_SMTP_PORT, port);
-        props.put(PROPERTY_MAIL_SMTP_AUTH, auth);
-        props.put(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, enableStartTls);
-        props.put(PROPERTY_MAIL_SMTP_SSL_TRUST, trustSsl);
-        buildRemainingProperties(props);
-
-        return props;
-    }
-
-    private void buildRemainingProperties(Properties props) {
-        for (Map.Entry prop : properties.entrySet()) {
-            if (prop.getKey().toString().startsWith(SMTP_PROPERTY_PREFIX)) {
-                String strValue = String.valueOf(prop.getValue());
-                String strKey = String.valueOf(prop.getKey());
-
-                if (strValue.equals(Boolean.TRUE.toString()) || strValue.equals(Boolean.FALSE.toString())) {
-                    props.put(prop.getKey(), Boolean.valueOf(strValue));
-                    continue;
-                }
-
-                try {
-                    int intValue = IntegerConverter.getInstance().convert(strKey, strValue);
-                    props.put(strKey, intValue);
-                    continue;
-                } catch (ConversionException e) {
-                    // It is not an Integer, continue loop
-                }
-
-                // If it's neither a boolean nor an int, then it's a String
-                props.put(strKey, strValue);
             }
         }
     }
@@ -309,7 +236,7 @@ public class EmailSender {
     }
 
     protected void connectAndSendMessage(MimeMessage message, Transport transport) throws MessagingException {
-        transport.connect(username, password);
+        transport.connect();
         transport.sendMessage(message, message.getAllRecipients());
     }
 
@@ -337,18 +264,47 @@ public class EmailSender {
         }
     }
 
+    @VisibleForTesting
+    protected Properties buildSmtpConfiguration() {
+        Properties props = new Properties();
+        for (Map.Entry prop : properties.entrySet()) {
+            if (prop.getKey().toString().startsWith(SMTP_PROPERTY_PREFIX)) {
+                String strValue = String.valueOf(prop.getValue());
+                String strKey = String.valueOf(prop.getKey());
+
+                if (strValue.equals(Boolean.TRUE.toString()) || strValue.equals(Boolean.FALSE.toString())) {
+                    props.put(prop.getKey(), Boolean.valueOf(strValue));
+                    continue;
+                }
+
+                try {
+                    int intValue = IntegerConverter.getInstance().convert(strKey, strValue);
+                    props.put(strKey, intValue);
+                    continue;
+                } catch (ConversionException e) {
+                    // It is not an Integer, continue loop
+                }
+
+                // If it's neither a boolean nor an int, then it's a String
+                props.put(strKey, strValue);
+            }
+        }
+        return props;
+    }
+
+    private Authenticator buildAuthenticator() {
+        return new javax.mail.Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(properties.getProperty(PROPERTY_MAIL_SMTP_USERNAME),
+                                                  properties.getProperty(PROPERTY_MAIL_SMTP_PASSWORD));
+            }
+        };
+    }
+
     /**
      * Utility class for creating an instance of {@link EmailSender}.
      */
     public static class Builder {
-
-        private boolean auth = true;
-
-        private boolean debug = false;
-
-        private boolean enableStartTls = false;
-
-        private int port = 587;
 
         private List<String> bcc;
 
@@ -360,15 +316,7 @@ public class EmailSender {
 
         private String from;
 
-        private String host;
-
-        private String username;
-
-        private String password;
-
         private String subject;
-
-        private String trustSsl = "*";
 
         private String fileToAttach;
 
@@ -381,66 +329,40 @@ public class EmailSender {
             cc = new ArrayList<>();
             recipients = new ArrayList<>();
             properties = new Properties();
+            loadJavaMailPropertiesOrSetDefault(Collections.emptyMap());
         }
 
         public Builder(Map<?, ?> options) {
             this();
             Map<?, ?> opts = new HashMap<>(options);
+            checkIfPropertyIsProvidedElseThrow(PROPERTY_MAIL_SMTP_HOST, opts);
             loadArguments(opts);
-            loadJavaMailConfiguration(opts);
+            loadJavaMailPropertiesOrSetDefault(opts);
             withProperties(opts);
         }
 
-        private void loadJavaMailConfiguration(Map<?, ?> options) {
-            String value = getAsString(options, PROPERTY_MAIL_DEBUG);
-            if (value != null) {
-                debug = BooleanConverter.getInstance().convert(PROPERTY_MAIL_DEBUG, value);
-                options.remove(PROPERTY_MAIL_DEBUG);
-            }
+        private void loadJavaMailPropertiesOrSetDefault(Map<?, ?> options) {
 
-            value = getAsString(options, PROPERTY_MAIL_SMTP_HOST);
-            if (value != null) {
-                host = value;
-                options.remove(PROPERTY_MAIL_SMTP_HOST);
-            } else {
-                throw new MissingArgumentException(PROPERTY_MAIL_SMTP_HOST);
-            }
+            String debug = Optional.ofNullable(getAsString(options, PROPERTY_MAIL_DEBUG)).orElse("false");
+            properties.put(PROPERTY_MAIL_DEBUG, debug);
+            options.remove(PROPERTY_MAIL_DEBUG);
 
-            value = getAsString(options, PROPERTY_MAIL_SMTP_PORT);
-            if (value != null) {
-                port = IntegerConverter.getInstance().convert(PROPERTY_MAIL_SMTP_PORT, value);
-                options.remove(PROPERTY_MAIL_SMTP_PORT);
-            }
+            String port = Optional.ofNullable(getAsString(options, PROPERTY_MAIL_SMTP_PORT)).orElse("587");
+            properties.put(PROPERTY_MAIL_SMTP_PORT, port);
+            options.remove(PROPERTY_MAIL_SMTP_PORT);
 
-            value = getAsString(options, PROPERTY_MAIL_SMTP_USERNAME);
-            if (value != null) {
-                username = value;
-                options.remove(PROPERTY_MAIL_SMTP_USERNAME);
-            }
+            String auth = Optional.ofNullable(getAsString(options, PROPERTY_MAIL_SMTP_AUTH)).orElse("true");
+            properties.put(PROPERTY_MAIL_SMTP_AUTH, auth);
+            options.remove(PROPERTY_MAIL_SMTP_AUTH);
 
-            value = getAsString(options, PROPERTY_MAIL_SMTP_PASSWORD);
-            if (value != null) {
-                password = value;
-                options.remove(PROPERTY_MAIL_SMTP_PASSWORD);
-            }
+            String enableStartTls = Optional.ofNullable(getAsString(options, PROPERTY_MAIL_SMTP_STARTTLS_ENABLE))
+                                            .orElse("false");
+            properties.put(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, enableStartTls);
+            options.remove(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE);
 
-            value = getAsString(options, PROPERTY_MAIL_SMTP_AUTH);
-            if (value != null) {
-                auth = BooleanConverter.getInstance().convert(PROPERTY_MAIL_SMTP_AUTH, value);
-                options.remove(PROPERTY_MAIL_SMTP_AUTH);
-            }
-
-            value = getAsString(options, PROPERTY_MAIL_SMTP_STARTTLS_ENABLE);
-            if (value != null) {
-                enableStartTls = BooleanConverter.getInstance().convert(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, value);
-                options.remove(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE);
-            }
-
-            value = getAsString(options, PROPERTY_MAIL_SMTP_SSL_TRUST);
-            if (value != null) {
-                trustSsl = value;
-                options.remove(PROPERTY_MAIL_SMTP_SSL_TRUST);
-            }
+            String trustSsl = Optional.ofNullable(getAsString(options, PROPERTY_MAIL_SMTP_SSL_TRUST)).orElse("*");
+            properties.put(PROPERTY_MAIL_SMTP_SSL_TRUST, trustSsl);
+            options.remove(PROPERTY_MAIL_SMTP_SSL_TRUST);
         }
 
         private void loadArguments(Map<?, ?> args) {
@@ -486,6 +408,15 @@ public class EmailSender {
             }
         }
 
+        private void checkIfPropertyIsProvidedElseThrow(String property, Map<?, ?> options) {
+            if (options.containsKey(property)) {
+                properties.put(property, getAsString(options, property));
+                options.remove(property);
+            } else {
+                throw new MissingArgumentException(property);
+            }
+        }
+
         private ImmutableList<String> emailAddressesAsList(Map<?, ?> args, String argRecipients) {
             return ImmutableList.copyOf((getAsString(args, argRecipients)).split(REGEX_LIST_SEPARATOR));
         }
@@ -495,7 +426,7 @@ public class EmailSender {
         }
 
         public Builder setAuth(boolean auth) {
-            this.auth = auth;
+            this.properties.put(PROPERTY_MAIL_SMTP_AUTH, auth);
             return this;
         }
 
@@ -580,7 +511,7 @@ public class EmailSender {
          * @return the builder instance.
          */
         public Builder setDebug(boolean value) {
-            this.debug = value;
+            properties.put(PROPERTY_MAIL_DEBUG, value);
             return this;
         }
 
@@ -612,7 +543,7 @@ public class EmailSender {
          * @return the builder instance.
          */
         public Builder setUsername(String username) {
-            this.username = username;
+            properties.put(PROPERTY_MAIL_SMTP_USERNAME, username);
             return this;
         }
 
@@ -623,7 +554,7 @@ public class EmailSender {
          * @return the builder instance.
          */
         public Builder setPassword(String password) {
-            this.password = password;
+            properties.put(PROPERTY_MAIL_SMTP_PASSWORD, password);
             return this;
         }
 
@@ -634,7 +565,7 @@ public class EmailSender {
          * @return the builder instance.
          */
         public Builder setHost(String host) {
-            this.host = host;
+            properties.put(PROPERTY_MAIL_SMTP_HOST, host);
             return this;
         }
 
@@ -645,7 +576,7 @@ public class EmailSender {
          * @return the builder instance.
          */
         public Builder setPort(int port) {
-            this.port = port;
+            properties.put(PROPERTY_MAIL_SMTP_PORT, port);
             return this;
         }
 
@@ -658,7 +589,7 @@ public class EmailSender {
          * @return the builder instance.
          */
         public Builder setEnableStartTls(boolean enableStartTls) {
-            this.enableStartTls = enableStartTls;
+            properties.put(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, enableStartTls);
             return this;
         }
 
@@ -671,7 +602,7 @@ public class EmailSender {
          * @return the builder instance.
          */
         public Builder setTrustSsl(String trustSsl) {
-            this.trustSsl = trustSsl;
+            properties.put(PROPERTY_MAIL_SMTP_SSL_TRUST, trustSsl);
             return this;
         }
 
@@ -690,11 +621,11 @@ public class EmailSender {
         }
 
         public boolean isDebugEnabled() {
-            return debug;
+            return Boolean.parseBoolean(properties.getProperty(PROPERTY_MAIL_DEBUG));
         }
 
         public boolean isAuthEnabled() {
-            return auth;
+            return Boolean.parseBoolean(properties.getProperty(PROPERTY_MAIL_SMTP_AUTH));
         }
 
         public String getFrom() {
@@ -722,27 +653,27 @@ public class EmailSender {
         }
 
         public String getUsername() {
-            return username;
+            return properties.getProperty(PROPERTY_MAIL_SMTP_USERNAME);
         }
 
         public String getPassword() {
-            return password;
+            return properties.getProperty(PROPERTY_MAIL_SMTP_PASSWORD);
         }
 
         public String getHost() {
-            return host;
+            return properties.getProperty(PROPERTY_MAIL_SMTP_HOST);
         }
 
         public int getPort() {
-            return port;
+            return Integer.parseInt(properties.getProperty(PROPERTY_MAIL_SMTP_PORT));
         }
 
         public boolean isStartTlsEnabled() {
-            return enableStartTls;
+            return Boolean.parseBoolean(properties.getProperty(PROPERTY_MAIL_SMTP_STARTTLS_ENABLE));
         }
 
         public String getTrustSsl() {
-            return trustSsl;
+            return properties.getProperty(PROPERTY_MAIL_SMTP_SSL_TRUST);
         }
 
         public String getFileToAttach() {
@@ -758,33 +689,14 @@ public class EmailSender {
         }
 
         public EmailSender build() {
-            EmailSender emailNotifier = new EmailSender(auth,
-                                                        debug,
-                                                        enableStartTls,
-                                                        port,
-                                                        cc,
-                                                        bcc,
-                                                        recipients,
-                                                        body,
-                                                        from,
-                                                        host,
-                                                        username,
-                                                        password,
-                                                        subject,
-                                                        trustSsl,
-                                                        fileToAttach,
-                                                        fileName);
-            emailNotifier.setProperties(properties);
-            return emailNotifier;
+            return new EmailSender(properties, cc, bcc, recipients, body, from, subject, fileToAttach, fileName);
         }
 
         @Override
         public String toString() {
-            return "Builder{" + "auth=" + auth + ", debug=" + debug + ", enableStartTls=" + enableStartTls + ", port=" +
-                   port + ", bcc=" + bcc + ", cc=" + cc + ", recipients=" + recipients + ", body='" + body + '\'' +
-                   ", from='" + from + '\'' + ", host='" + host + '\'' + ", username='" + username + '\'' +
-                   ", password='" + password + '\'' + ", subject='" + subject + '\'' + ", trustSsl='" + trustSsl +
-                   '\'' + '}';
+            return "Builder{" + "properties= " + properties + " bcc=" + bcc + ", cc=" + cc + ", recipients=" +
+                   recipients + ", body='" + body + '\'' + ", from='" + from + '\'' + ", username='" + '\'' +
+                   ", subject='" + subject + '\'' + '}';
         }
 
     }
