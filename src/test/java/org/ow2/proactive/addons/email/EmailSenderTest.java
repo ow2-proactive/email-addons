@@ -30,6 +30,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.mail.Address;
@@ -39,6 +41,7 @@ import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -55,164 +58,118 @@ import com.google.common.collect.ImmutableList;
  */
 public class EmailSenderTest {
 
+    private Properties properties;
+
+    @Before
+    public void initProps() {
+        properties = new Properties();
+        properties.put(EmailSender.PROPERTY_MAIL_SMTP_HOST, "host");
+        properties.put(EmailSender.PROPERTY_MAIL_DEBUG, false);
+        properties.put(EmailSender.PROPERTY_MAIL_SMTP_AUTH, true);
+        properties.put(EmailSender.PROPERTY_MAIL_SMTP_SSL_TRUST, "trust");
+        properties.put(EmailSender.PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, true);
+        properties.put(EmailSender.PROPERTY_MAIL_SMTP_PORT, 25);
+        properties.put(EmailSender.PROPERTY_MAIL_SMTP_USERNAME, "username");
+        properties.put(EmailSender.PROPERTY_MAIL_SMTP_PASSWORD, "password");
+    }
+
     /*
      * Check the mapping between fields passed as parameters and the instance fields.
      */
     @Test
     public void testConstructor() {
-        EmailSender emailSender = new EmailSender(false,
-                                                  true,
-                                                  true,
-                                                  25,
+        EmailSender emailSender = new EmailSender(properties,
                                                   ImmutableList.of("cc@company.com"),
                                                   ImmutableList.of("bcc@company.com"),
                                                   ImmutableList.of("recipients@company.com"),
                                                   "body",
                                                   "from@company.com",
-                                                  "host",
-                                                  "username",
-                                                  "password",
                                                   "subject",
-                                                  "trust",
                                                   "file_path",
                                                   "file_name");
-
-        assertThat(emailSender.auth).isFalse();
-        assertThat(emailSender.debug).isTrue();
-        assertThat(emailSender.enableStartTls).isTrue();
-
-        assertThat(emailSender.port).isEqualTo(25);
 
         assertThat(emailSender.cc).contains("cc@company.com");
         assertThat(emailSender.bcc).contains("bcc@company.com");
         assertThat(emailSender.recipients).contains("recipients@company.com");
-
         assertThat(emailSender.body).isEqualTo("body");
         assertThat(emailSender.from).isEqualTo("from@company.com");
-        assertThat(emailSender.host).isEqualTo("host");
-        assertThat(emailSender.username).isEqualTo("username");
-        assertThat(emailSender.password).isEqualTo("password");
         assertThat(emailSender.subject).isEqualTo("subject");
-        assertThat(emailSender.trustSsl).isEqualTo("trust");
+
+        assertThat(emailSender.properties).containsExactlyEntriesIn(this.properties);
+
     }
 
     @Test(expected = InvalidArgumentException.class)
     public void testTooLongSubject() {
-        new EmailSender(false,
-                        true,
-                        true,
-                        25,
+
+        new EmailSender(properties,
                         ImmutableList.of("cc@company.com"),
                         ImmutableList.of("bcc@company.com"),
                         ImmutableList.of("recipients@company.com"),
                         "body",
                         "from@company.com",
-                        "host",
-                        "username",
-                        "password",
                         "This is a really really really really long subject that will exceed the authorized length",
-                        "trust",
                         "file_path",
                         "file_name");
     }
 
     @Test(expected = MissingArgumentException.class)
     public void testNullFrom() {
-        new EmailSender(false,
-                        true,
-                        true,
-                        25,
+        new EmailSender(properties,
                         ImmutableList.of("cc@company.com"),
                         ImmutableList.of("bcc@company.com"),
                         ImmutableList.of("recipients@company.com"),
                         "body",
                         null,
-                        "host",
-                        "username",
-                        "password",
-                        "This is a really really really really long subject that will exceed the authorized length",
-                        "trust",
+                        "subject",
                         "file_path",
                         "file_name");
     }
 
     @Test(expected = MissingArgumentException.class)
     public void testNullSubject() {
-        new EmailSender(false,
-                        true,
-                        true,
-                        25,
+        new EmailSender(properties,
                         ImmutableList.of("cc@company.com"),
                         ImmutableList.of("bcc@company.com"),
                         ImmutableList.of("recipients@company.com"),
                         "body",
                         "from@company.com",
-                        "host",
-                        "username",
-                        "password",
                         null,
-                        "trust",
                         "file_path",
                         "file_name");
     }
 
     @Test(expected = MissingArgumentException.class)
     public void testNullBody() {
-        new EmailSender(false,
-                        true,
-                        true,
-                        25,
+        new EmailSender(properties,
                         ImmutableList.of("cc@company.com"),
                         ImmutableList.of("bcc@company.com"),
                         ImmutableList.of("recipients@company.com"),
                         null,
                         "from@company.com",
-                        "host",
-                        "username",
-                        "password",
                         "subject",
-                        "trust",
                         "file_path",
                         "file_name");
     }
 
     @Test
     public void testBuildSmtpConfiguration() {
-        EmailSender emailSender = new EmailSender(false,
-                                                  true,
-                                                  true,
-                                                  25,
+        EmailSender emailSender = new EmailSender(properties,
                                                   ImmutableList.of("cc@company.com"),
                                                   ImmutableList.of("bcc@company.com"),
                                                   ImmutableList.of("recipients@company.com"),
                                                   "body",
                                                   "from@company.com",
-                                                  "host",
-                                                  "username",
-                                                  "password",
                                                   "subject",
-                                                  "trust",
                                                   "file_path",
                                                   "file_name");
 
-        Properties properties = emailSender.buildSmtpConfiguration();
-
-        assertThat(properties).hasSize(6);
-
-        assertThat(properties).containsEntry(EmailSender.PROPERTY_MAIL_DEBUG, true);
-        assertThat(properties).containsEntry(EmailSender.PROPERTY_MAIL_SMTP_HOST, "host");
-        assertThat(properties).containsEntry(EmailSender.PROPERTY_MAIL_SMTP_PORT, 25);
-        assertThat(properties).containsEntry(EmailSender.PROPERTY_MAIL_SMTP_AUTH, false);
-        assertThat(properties).containsEntry(EmailSender.PROPERTY_MAIL_SMTP_STARTTLS_ENABLE, true);
-        assertThat(properties).containsEntry(EmailSender.PROPERTY_MAIL_SMTP_SSL_TRUST, "trust");
+        assertThat(emailSender.buildSmtpConfiguration()).containsExactlyEntriesIn(this.properties);
     }
 
     @Test
     public void testConfigurePlainTextMessage() throws MessagingException {
-        EmailSender emailSender = new EmailSender(false,
-                                                  true,
-                                                  true,
-                                                  25,
+        EmailSender emailSender = new EmailSender(properties,
                                                   ImmutableList.of("cc1@company.com",
                                                                    "cc2@company.com",
                                                                    "cc3@company.com"),
@@ -220,11 +177,7 @@ public class EmailSenderTest {
                                                   ImmutableList.of("recipient@company.com"),
                                                   "body",
                                                   "from@company.com",
-                                                  "host",
-                                                  "username",
-                                                  "password",
                                                   "subject",
-                                                  "trust",
                                                   "file_path",
                                                   "file_name");
 
@@ -252,22 +205,13 @@ public class EmailSenderTest {
 
     @Test
     public void testConnectAndSendMessage() throws Exception {
-        EmailSender emailSender = new EmailSender(false,
-                                                  true,
-                                                  true,
-                                                  25,
-                                                  ImmutableList.of("cc1@company.com",
-                                                                   "cc2@company.com",
-                                                                   "cc3@company.com"),
-                                                  ImmutableList.of("bcc1@company.com", "bcc2@company.com"),
-                                                  ImmutableList.of("recipient@company.com"),
+        EmailSender emailSender = new EmailSender(properties,
+                                                  ImmutableList.of("cc@company.com"),
+                                                  ImmutableList.of("bcc@company.com"),
+                                                  ImmutableList.of("recipients@company.com"),
                                                   "body",
                                                   "from@company.com",
-                                                  "host",
-                                                  "username",
-                                                  "password",
                                                   "subject",
-                                                  "trust",
                                                   "file_path",
                                                   "file_name");
 
@@ -279,8 +223,7 @@ public class EmailSenderTest {
         emailSender.connectAndSendMessage(mimeMessageMock, transportMock);
 
         InOrder inOrder = Mockito.inOrder(transportMock);
-        inOrder.verify(transportMock).connect(eq("username"), eq("password"));
+        verify(transportMock).connect();
         inOrder.verify(transportMock).sendMessage(mimeMessageMock, mimeMessageMock.getAllRecipients());
     }
-
 }
