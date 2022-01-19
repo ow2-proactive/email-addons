@@ -219,7 +219,7 @@ public class EmailSenderBuilderTest {
         config.put(EXTRA_PROPERTY_MAIL_SMTP_CONNECTIONTIMEOUT, "120000");
 
         EmailSender.Builder builder = new EmailSender.Builder(config.build());
-        assertThat(builder.getProperties().size()).isEqualTo(1);
+        assertThat(builder.getProperties().size()).isEqualTo(9);
         assertThat(builder.getProperties().get(EXTRA_PROPERTY_MAIL_SMTP_CONNECTIONTIMEOUT)).isNotNull();
 
         ImmutableMap.Builder<String, Serializable> extraProps = ImmutableMap.builder();

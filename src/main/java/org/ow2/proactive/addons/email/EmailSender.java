@@ -130,10 +130,6 @@ public class EmailSender {
         checkInstanceFieldsConsistency();
     }
 
-    private void setProperties(Properties properties) {
-        this.properties = properties;
-    }
-
     public void sendPlainTextEmailWithAttachment() {
         Properties props = buildSmtpConfiguration();
         Session session = Session.getDefaultInstance(props, buildAuthenticator());
