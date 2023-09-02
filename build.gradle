@@ -82,4 +82,5 @@ jar {
                 .findAll { !it.name.toLowerCase().contains("slf4j") }
                 .collect { it.isDirectory() ? it : zipTree(it) }
     }
+    exclude 'META-INF/maven/**'
 }
